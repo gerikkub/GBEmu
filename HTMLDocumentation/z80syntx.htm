@@ -1,0 +1,1444 @@
+<html><head>
+<meta http-equiv="content-type" content="text/html; charset=ISO-8859-1">
+<title>Z80 Assembler Syntax</title>
+<meta name="title" content="Thomas Scherrer Z80-Family HomePage">
+<meta name="keywords" content="Z80,Z180,Z280,Z380,Programming,Hardware,Software,Utilities,FAQ,Support,CPU,assembler,emulators,simulators">
+<meta name="description" content="Z80, Z180, Z280, Z380, Programming, Hardware, Software, Utilities, FAQ, Support, CPU, assembler">
+</head><body background="z80syntx_files/zand.jpg">
+<a href="http://www.z80.info/index.htm">
+<img src="z80syntx_files/zlogo1.gif" alt="Z80 Home" border="0" height="98" width="198"></a>
+<hr>
+<h2>Zilog Z80 CPU Assembler Syntax</h2><p>
+This page is typed and converted to HTML by <a href="http://www.z80.info/contact.htm">Thomas Scherrer</a><br>
+I'm still working on this document, so you can come back later to see it develop..
+</p><hr>
+<big>ASM:</big> Is the assembler source code.<br>
+<big>OBJ:</big> Is the object code (binary executable).
+<hr>
+<h2>Select the Mnemonic you want detailed info about:</h2>
+<table width="70%"><tbody><tr>
+<td><b>Mnemonic:</b></td><td><b>Description:</b>  </td></tr>
+<tr><td><a href="#ADC">ADC</a></td><td>ADD WITH CARRY</td></tr>
+<tr><td><a href="#ADD">ADD</a></td><td>ADD</td></tr>
+<tr><td><a href="#AND">AND</a></td><td>LOGICAL AND</td></tr>     
+<tr><td><a href="#BIT">BIT</a></td><td>BIT TEST</td></tr>     
+<tr><td><a href="#CALL">CALL</a></td><td>CALL SUB ROUTINE</td></tr>
+<tr><td><a href="#CCF">CCF</a></td><td>COMPLEMENT CARRY FLAG</td></tr>
+<tr><td><a href="#CP">CP</a></td><td>COMPARE</td></tr>
+<tr><td><a href="#CPD">CPD</a></td><td>COMPARE AND DECREMENT</td></tr>
+<tr><td><a href="#CPDR">CPDR</a></td><td>COMPARE DECREMENT AND REPEAT</td></tr>
+<tr><td><a href="#CPI">CPI</a></td><td>COMPARE AND INCREMENT</td></tr>
+<tr><td><a href="#CPIR">CPIR</a></td><td>COMPARE INCREMENT AND REPEAT</td></tr>
+<tr><td><a href="#CPL">CPL</a></td><td>COMPLEMENT ACCUMULATOR</td></tr>
+<tr><td><a href="#DAA">DAA</a></td><td>DECIMAL ADJUST ACCUMULATOR</td></tr>
+<tr><td><a href="#DEC">DEC</a></td><td>DECREMENT</td></tr>
+<tr><td><a href="#DI">DI</a></td><td>DISABLE INTERRUPTS</td></tr>
+<tr><td><a href="#DJNZ">DJNZ</a></td><td>DEC JUMP NON-ZERO</td></tr>
+<tr><td><a href="#EI">EI</a></td><td>ENABLE INTERRUPTS</td></tr>
+<tr><td><a href="#EX">EX</a></td><td>EXCHANGE REGISTER PAIR</td></tr>
+<tr><td><a href="#EXX">EXX</a></td><td>EXCHANGE ALTERNATE REGISTERS</td></tr>
+<tr><td><a href="#HALT">HALT</a></td><td>HALT, WAIT FOR INTERRUPT OR RESET</td></tr>
+<tr><td><a href="#IM">IM</a></td><td>INTERRUPT MODE 0 1 2</td></tr>
+<tr><td><a href="#IN">IN</a></td><td>INPUT FROM PORT</td></tr>
+<tr><td><a href="#INC">INC</a></td><td>INCREMENT</td></tr>
+<tr><td><a href="#IND">IND</a></td><td>INPUT, DEC HL, DEC B</td></tr>
+<tr><td><a href="#INDR">INDR</a></td><td>INPUT, DEC HL, DEC B, REPEAT IF B&gt;0</td></tr>
+<tr><td><a href="#INI">INI</a></td><td>INPUT, INC HL, DEC B</td></tr>
+<tr><td><a href="#INIR">INIR</a></td><td>INPUT, INC HL, DEC B, REPEAT IF B&gt;0</td></tr>
+<tr><td><a href="#JP">JP</a></td><td>JUMP</td></tr>
+<tr><td><a href="#JR">JR</a></td><td>JUMP RELATIVE</td></tr>
+<tr><td><a href="#LD">LD</a></td><td>LOAD DATA TO/FROM REGISTERS/MEMORY</td></tr>
+<tr><td><a href="#LDD">LDD</a></td><td>LOAD DECREMENT</td></tr>
+<tr><td><a href="#LDDR">LDDR</a></td><td>LOAD DECREMENT AND REPEAT</td></tr>
+<tr><td><a href="#LDI">LDI</a></td><td>LOAD AND INCREMENT</td></tr>
+<tr><td><a href="#LDIR">LDIR</a></td><td>LOAD INCREMENT AND REPEAT</td></tr>
+<tr><td><a href="#NEG">NEG</a></td><td>NEGATE ACCUMULATOR 2'S COMPLEMENT</td></tr>
+<tr><td><a href="#NOP">NOP</a></td><td>NO OPERATION</td></tr>
+<tr><td><a href="#OR">OR</a></td><td>--</td></tr>
+<tr><td><a href="#OTDR">OTDR</a></td><td>OUTPUT, DEC HL, DEC B, REPEAT IF B&gt;0</td></tr>
+<tr><td><a href="#OTIR">OTIR</a></td><td>OUTPUT, INC HL, DEC B, REPEAT IF B&gt;0</td></tr>
+<tr><td><a href="#OUT">OUT</a></td><td>OUTPUT TO PORT</td></tr>
+<tr><td><a href="#OUTD">OUTD</a></td><td>OUTPUT, DEC HL, DEC B</td></tr>
+<tr><td><a href="#OUTI">OUTI</a></td><td>OUTPUT, INC HL, DEC B</td></tr>
+<tr><td><a href="#POP">POP</a></td><td>POP FROM STACK</td></tr>
+<tr><td><a href="#PUSH">PUSH</a></td><td>PUSH INTO STACK</td></tr>
+<tr><td><a href="#RES">RES</a></td><td>RESET BIT</td></tr>
+<tr><td><a href="#RET">RET</a></td><td>RETURN FROM SUB ROUTINE</td></tr>
+<tr><td><a href="#RETI">RETI</a></td><td>RETURN FROM INTERRUPT</td></tr>
+<tr><td><a href="#RETN">RETN</a></td><td>RETURN FROM NON MASKABEL INTERRUPT</td></tr>
+<tr><td><a href="#RL">RL</a></td><td>ROTATE LEFT register</td></tr>
+<tr><td><a href="#RLA">RLA</a></td><td>ROTATE LEFT ACUMULATOR</td></tr>
+<tr><td><a href="#RLC">RLC</a></td><td>ROTATE LEFT THROUGH CARRY register</td></tr>
+<tr><td><a href="#RLCA">RLCA</a></td><td>ROTATE LEFT THROUGH CARRY ACCUMULATUR</td></tr>
+<tr><td><a href="#RLD">RLD</a></td><td>ROTATE LEFT DIGIT</td></tr>
+<tr><td><a href="#RR">RR</a></td><td>ROTATE RIGHT register</td></tr>
+<tr><td><a href="#RRA">RRA</a></td><td>ROTATE RIGHT ACCUMULATOR</td></tr>
+<tr><td><a href="#RRC">RRC</a></td><td>ROTATE RIGHT CIRCULAR register</td></tr>
+<tr><td><a href="#RRCA">RRCA</a></td><td>ROTATE RIGHT CIRCULAR ACCUMULATOR</td></tr>
+<tr><td><a href="#RRD">RRD</a></td><td>ROTATE RIGHT DIGIT</td></tr>
+<tr><td><a href="#RST">RST</a></td><td>RESTART</td></tr>
+<tr><td><a href="#SBC">SBC</a></td><td>SUBTRACT WITH CARRY</td></tr>
+<tr><td><a href="#SCF">SCF</a></td><td>SET CARRY FLAG</td></tr>
+<tr><td><a href="#SET">SET</a></td><td>SET BIT</td></tr>
+<tr><td><a href="#SLA">SLA</a></td><td>SHIFT LEFT ARITHMETIC register</td></tr>
+<tr><td><a href="#SRA">SRA</a></td><td>SHIFT RIGHT ARITHMETIC register</td></tr>
+<tr><td><a href="#SRL">SRL</a></td><td>SHIFT RIGHT LOGICAL register</td></tr> 
+<tr><td><a href="#SUB">SUB</a></td><td>SUBTRACTION</td></tr>
+<tr><td><a href="#XOR">XOR</a></td><td>EXCLUSIVE OR</td></tr>
+</tbody></table>
+
+
+
+
+<h2><a name="ADC">
+<hr noshade="noshade" size="10">
+Detailed info <big>ADC</big></a></h2><p><a name="ADC">
+ADD WITH CARRY
+
+</a></p><h2><a name="ADD">
+<hr noshade="noshade" size="10">
+Detailed info <big>ADD</big></a></h2><p><a name="ADD">
+
+</a></p><h2><a name="AND">
+<hr noshade="noshade" size="10">
+Detailed info <big>AND</big></a></h2><p><a name="AND">
+LOGICAL AND
+
+</a></p><h2><a name="BIT">
+<hr noshade="noshade" size="10">
+Detailed info <big>BIT</big></a></h2><p><a name="BIT">
+BIT TEST
+
+</a></p><h2><a name="CALL">
+<hr noshade="noshade" size="10">
+Detailed info <big>CALL</big></a></h2><p><a name="CALL">
+CALL a subroutine
+
+
+</a></p><h2><a name="CCF">
+<hr noshade="noshade" size="10">
+Detailed info <big>CCF</big></a></h2><p><a name="CCF">
+Opperation: CY = Inv CY<br></a></p><p><a name="CCF">
+
+<big>Instruction Format:</big></a></p><p><a name="CCF">
+      Opcode: CCF<br>
+      OBJ: 3Fh <br> </a></p><p><a name="CCF">
+<big>Description:</big></a></p><p><a name="CCF">
+The Carry flag in the flags register is inverted.<br></a></p><p><a name="CCF">
+Tstates: 4.<br></a></p><p><a name="CCF">
+<big><b>Flags:</b></big>
+</a></p><dd><a name="CCF"><big>S:</big>   Not affected.<br>
+</a></dd><dd><a name="CCF"><big>Z:</big>   Not affected.<br>
+</a></dd><dd><a name="CCF"><big>H:</big>   Pprevious carry will be copied to H.<br>
+</a></dd><dd><a name="CCF"><big>P/V:</big> Not affected.<br>
+</a></dd><dd><a name="CCF"><big>N:</big>   Reset.<br>
+</a></dd><dd><a name="CCF"><big>C:</big>   Set if carry was 0 before operation, reset otherwise.<br><p>
+
+</p></a><h2><a name="CCF"></a><a name="CP">
+<hr noshade="noshade" size="10">
+Detailed info <big>CP</big></a></h2><p><a name="CP">
+COMPARE 
+
+</a></p><h2><a name="CPD">
+<hr noshade="noshade" size="10">
+Detailed info <big>CPD</big></a></h2><p><a name="CPD">
+COMPARE AND DECREMENT
+
+</a></p><h2><a name="CPDR">
+<hr noshade="noshade" size="10">
+Detailed info <big>CPDR</big></a></h2><p><a name="CPDR">
+COMPARE DECREMENT AND REPEAT</a></p><pre><a name="CPDR">
+<img src="z80syntx_files/z-cpdr.gif" border="0" height="172" width="202">
+
+Flags: CY Z  PV S  N  H 
+       .  ~  ~  ~  1  ~ (~ = changes, . = no change)
+
+And the flags: if byte found: Z=1; HL - address of next byte;
+                                   BC - figure out by yourself.
+                   not found: Z=0
+
+</a><h2><a name="CPDR"></a><a name="CPI">
+<hr noshade="noshade" size="10">
+Detailed info <big>CPI</big></a></h2><p><a name="CPI">
+COMPARE AND INCREMENT
+
+</a></p><h2><a name="CPIR">
+<hr noshade="noshade" size="10">
+Detailed info <big>CPIR</big></a></h2><p><a name="CPIR">
+COMPARE INCREMENT AND REPEAT</a></p><pre><a name="CPIR">
+<img src="z80syntx_files/z-cpir.gif" border="0" height="172" width="202">
+
+Flags: CY Z  PV S  N  H 
+       .  ~  ~  ~  1  ~ (~ = changes, . = no change)
+
+And the flags: if byte found: Z=1; HL - address of next byte;
+                                   BC - figure out by yourself.
+                   not found: Z=0
+I believe, that if on exit BC=0 then PV=0 else PV=1, that's so with CPI
+(CPD) command, so why shouldn't it be with CPIR (CPDR)?
+
+So the difference between if a byte, is or is not found, is expressed
+by the Zero flag. Sorry, don't know exactly how are S and H affected...
+
+</a></pre><a name="CPIR">
+
+</a><h2><a name="CPIR"></a><a name="CPL">
+<hr noshade="noshade" size="10">
+Detailed info <big>CPL</big></a></h2><p><a name="CPL">
+COMPLEMENT ACCUMULATOR
+
+</a></p><h2><a name="DAA">
+<hr noshade="noshade" size="10">
+Detailed info <big>DAA</big></a></h2><a name="DAA">
+<big>Instruction Format:</big><p>
+</p><pre>OPCODE                    CYCLES
+--------------------------------
+  27h                       4
+
+
+Description:
+This instruction conditionally adjusts the accumulator for BCD addition
+and subtraction operations. For addition (ADD, ADC, INC) or subtraction
+(SUB, SBC, DEC, NEC), the following table indicates the operation performed:
+
+--------------------------------------------------------------------------------
+|           | C Flag  | HEX value in | H Flag | HEX value in | Number  | C flag|
+| Operation | Before  | upper digit  | Before | lower digit  | added   | After |
+|           | DAA     | (bit 7-4)    | DAA    | (bit 3-0)    | to byte | DAA   |
+|------------------------------------------------------------------------------|
+|           |    0    |     0-9      |   0    |     0-9      |   00    |   0   |
+|   ADD     |    0    |     0-8      |   0    |     A-F      |   06    |   0   |
+|           |    0    |     0-9      |   1    |     0-3      |   06    |   0   |
+|   ADC     |    0    |     A-F      |   0    |     0-9      |   60    |   1   |
+|           |    0    |     9-F      |   0    |     A-F      |   66    |   1   |
+|   INC     |    0    |     A-F      |   1    |     0-3      |   66    |   1   |
+|           |    1    |     0-2      |   0    |     0-9      |   60    |   1   |
+|           |    1    |     0-2      |   0    |     A-F      |   66    |   1   |
+|           |    1    |     0-3      |   1    |     0-3      |   66    |   1   |
+|------------------------------------------------------------------------------|
+|   SUB     |    0    |     0-9      |   0    |     0-9      |   00    |   0   |
+|   SBC     |    0    |     0-8      |   1    |     6-F      |   FA    |   0   |
+|   DEC     |    1    |     7-F      |   0    |     0-9      |   A0    |   1   |
+|   NEG     |    1    |     6-F      |   1    |     6-F      |   9A    |   1   |
+|------------------------------------------------------------------------------|
+
+</pre>
+<big><b>Flags:</b></big>
+<dd><big>C:</big>   See instruction.<br>
+</dd><dd><big>N:</big>   Unaffected.<br>
+</dd><dd><big>P/V:</big> Set if Acc. is even parity after operation, reset otherwise.<br>
+</dd><dd><big>H:</big>   See instruction.<br>
+</dd><dd><big>Z:</big>   Set if Acc. is Zero after operation, reset otherwise.<br>
+</dd></a><dd><a name="DAA"><big>S:</big>   Set if most significant bit of Acc. is 1 after operation, reset otherwise.<br>
+<pre>
+<big><b>Example:</b></big>
+
+If an addition operation is performed between 15 (BCD) and 27 (BCD), simple decimal
+arithmetic gives this result:
+
+    15
+   +27
+   ----
+    42
+
+But when the binary representations are added in the Accumulator according to
+standard binary arithmetic:
+
+   0001 0101  15
+  +0010 0111  27
+  ---------------
+   0011 1100  3C
+
+The sum is ambiguous. The DAA instruction adjusts this result so that correct
+BCD representation is obtained:
+
+   0011 1100  3C result
+  +0000 0110  06 +error
+  ---------------
+   0100 0010  42 Correct BCD!
+</pre>
+
+
+</a><h2><a name="DAA"></a><a name="DEC">
+<hr noshade="noshade" size="10">
+Detailed info <big>DEC</big></a></h2><p><a name="DEC">
+DECREMENT
+
+</a></p><h2><a name="DI">
+<hr noshade="noshade" size="10">
+Detailed info <big>DI</big></a></h2><p><a name="DI">
+DISABLE INTERRUPTS
+
+</a></p><h2><a name="DJNZ">
+<hr noshade="noshade" size="10">
+Detailed info <big>DJNZ</big></a></h2><p><a name="DJNZ">
+DEC JUMP NON-ZERO
+
+</a></p><h2><a name="EI">
+<hr noshade="noshade" size="10">
+Detailed info <big>EI</big></a></h2><p><a name="EI">
+ENABLE INTERRUPTS
+
+</a></p><h2><a name="EX">
+<hr noshade="noshade" size="10">
+Detailed info <big>EX</big></a></h2><p><a name="EX">
+EXCHANGE REGISTER PAIR</a></p><p><a name="EX">
+</a></p><pre><a name="EX"><b>
+ASM: EX  DE,HL
+OBJ: EBh
+</b>Tstates : 4.<p><b>
+
+ASM: EX  AF,AF'
+OBJ: 08h
+</b>Tstates : 4.</p><p>
+
+Description:
+The 16bit value in the two registers are exchanged.
+note: register pair AF consists of register A and the flags register F
+
+<b>
+ASM: EX  (SP),HL
+OBJ: E3h
+</b>Tstates : 19.</p><p>
+
+Description:
+The low order byte contained in register pait HL is exchanged with the contents
+of the memory address spefified by the contents of register pair SP (Stack Pointer),
+and the high order byte of HL is exchanges with the next highest memory address (SP+1).
+H &lt;-&gt; (SP+1) , L &lt;-&gt; (SP)  this will not affect the contents of SP.
+
+<b>
+ASM: EX  (SP),IX
+OBJ: DDh, E3h
+</b>Tstates : 23.</p><p>
+
+<b>
+ASM: EX  (SP),IY
+OBJ: FDh, E3h
+</b>Tstates : 23.</p><p>
+
+Description:
+Does the same as above.
+eg:  IXH &lt;-&gt; (SP+1), IXL &lt;-&gt; (SP)  IXH = IX height byte, IXL = IX low byte..
+</p></a></pre><a name="EX">
+
+</a><h2><a name="EX"></a><a name="EXX">
+<hr noshade="noshade" size="10">
+Detailed info <big>EXX</big></a></h2><p><a name="EXX">
+EXCHANGE ALTERNATE REGISTERS
+</a></p><pre><a name="EXX"><b>
+ASM: EXX
+OBJ: D9h
+</b>Tstates : 4.<p>
+
+Description:
+Each 16bit value in register pairs BC, DE, HL is exchanged with the 16bit value in BC', DE', HL' respectively.
+eg:
+BC &lt;-&gt; BC'
+DE &lt;-&gt; DE'
+HL &lt;-&gt; HL' 
+
+</p></a></pre><a name="EXX">
+
+</a><h2><a name="EXX"></a><a name="HALT">
+<hr noshade="noshade" size="10">
+Detailed info <big>HALT</big></a></h2><p><a name="HALT">
+HALT, WAIT FOR INTERRUPT OR RESET
+</a></p><pre><a name="HALT"><b>
+ASM: HALT
+OBJ: 76h
+</b>Tstates : 4.<p>
+
+Description:
+The HALT instruction suspends CPU operation until a interrupt or reset is received.
+While in the halted state, the processor will execute NOP's to maintain memory refresh logic.
+
+</p></a></pre><a name="HALT">
+
+</a><h2><a name="HALT"></a><a name="IM">
+<hr noshade="noshade" size="10">
+Detailed info <big>IM</big></a></h2><p><a name="IM">
+INTERRUPT MODE 0 1 2
+
+</a></p><h2><a name="IN">
+<hr noshade="noshade" size="10">
+Detailed info <big>IN</big></a></h2><p><a name="IN">
+INPUT FROM PORT
+
+</a></p><h2><a name="INC">
+<hr noshade="noshade" size="10">
+Detailed info <big>INC</big></a></h2><p><a name="INC">
+INCREMENT
+
+</a></p><h2><a name="IND">
+<hr noshade="noshade" size="10">
+Detailed info <big>IND</big></a></h2><a name="IND">
+<big>Instruction Format:</big><p>
+</p><pre>OPCODE        CYCLES
+-------------------------------
+ ED  AA         16 
+
+Description:
+The contents of register C are placed on the bottom half (A0-A7) of the address
+bus to select the I/O device. Register B may be used as a byte counter, and its
+contents are placed on the top half (A8-A15) af the address bus at this time.
+Then one byte from the selected port is placed on the data bus and written to the
+CPU. The contents of the HL register pair are pointer to store the redden byte
+in memory. The register pair HL is decremented, the byte counter B is decremented.
+</pre>
+
+<big><b>Flags:</b></big>
+</a></dd><dd><a name="IND"><big>C:</big>   Not affected.<br>
+</a></dd><dd><a name="IND"><big>N:</big>   Set.<br>
+</a></dd><dd><a name="IND"><big>P/V:</big> UnKnown.<br>
+</a></dd><dd><a name="IND"><big>H:</big>   UnKnown.<br>
+</a></dd><dd><a name="IND"><big>Z:</big>   Set if B-1=0, reset otherwise.<br>
+</a></dd><dd><a name="IND"><big>S:</big>   UnKnown.<br>
+<p><br>
+</p><pre>
+<big><b>Example:</b></big>
+
+Reg C=07h
+Reg B=10h
+Reg HL=1000h
+IO port nr. 07h contain data 7Bh
+
+Then after the execution of
+<big><b>IND</b></big>
+The HL register pair will contain 0FFFh, and register B will contain 0Fh,
+and memory location 1000h will contain 7Bh.
+</pre>
+
+</a><h2><a name="IND"></a><a name="INDR">
+<hr noshade="noshade" size="10">
+Detailed info <big>INDR</big></a></h2><a name="INDR">
+<big>Instruction Format:</big><p>
+</p><pre>OPCODE                   CYCLES
+--------------------------------------------
+ ED  BA         16 if B=0    21 if B &gt;&lt; 0
+
+Description:
+The contents of register C are placed on the bottom half (A0-A7) of the address
+bus to select the I/O device. Register B is used as a byte counter, and its
+contents are placed on the top half (A8-A15) af the address bus at this time.
+Then one byte from the selected port is placed on the data bus and written to the
+CPU. The contents of the HL register pair are pointer to store the redden byte
+in memory. The register pair HL is decremented, the byte counter B is decremented.
+If decrementing causes B to go to zero, the instruction is terminated. If B is not
+zero, the instruction is repeated.
+</pre>
+
+<big><b>Flags:</b></big>
+</a></dd><dd><a name="INDR"><big>C:</big>   Not affected.<br>
+</a></dd><dd><a name="INDR"><big>N:</big>   Set.<br>
+</a></dd><dd><a name="INDR"><big>P/V:</big> UnKnown.<br>
+</a></dd><dd><a name="INDR"><big>H:</big>   UnKnown.<br>
+</a></dd><dd><a name="INDR"><big>Z:</big>   Set.<br>
+</a></dd><dd><a name="INDR"><big>S:</big>   UnKnown.<br>
+<p><br>
+</p><pre>
+<big><b>Example:</b></big>
+
+Reg C=07h
+Reg B=03h
+Reg HL=1000h
+IO port nr. 07h contain data 51h, A9h, 03h
+
+Then after the execution of
+<big><b>INDR</b></big>
+The HL register pair will contain 0FFDh, and register B will contain zero,
+and memory locations will have contents as follows:
+
+Location:    Contents:
+0FFEh        03h
+0FFFh        A9h
+1000h        51h
+</pre>
+
+
+
+
+</a><h2><a name="INDR"></a><a name="INI">
+<hr noshade="noshade" size="10">
+Detailed info <big>INI</big></a></h2><a name="INI">
+<big>Instruction Format:</big><p>
+</p><pre>OPCODE        CYCLES
+---------------------
+ ED  A2         16
+
+
+Description:
+The contents of register C are placed on the bottom half (A0-A7) of the address
+bus to select the I/O device. Register B may be used as a byte counter, and its
+contents are placed on the top half (A8-A15) af the address bus at this time.
+Then one byte from the selected port is placed on the data bus and written to the
+CPU. The contents of the HL register pair are pointer to store the redden byte
+in memory. Finally the byte counter B is decremented and register pair HL is incremented.
+
+</pre>
+<big><b>Flags:</b></big>
+</a></dd><dd><a name="INI"><big>C:</big>   Not affected.<br>
+</a></dd><dd><a name="INI"><big>N:</big>   Set.<br>
+</a></dd><dd><a name="INI"><big>P/V:</big> UnKnown.<br>
+</a></dd><dd><a name="INI"><big>H:</big>   UnKnown.<br>
+</a></dd><dd><a name="INI"><big>Z:</big>   Set if B-1=0, reset otherwise.<br>
+</a></dd><dd><a name="INI"><big>S:</big>   UnKnown.<br>
+<p><br>
+</p><pre>
+<big><b>Example:</b></big>
+
+Reg C=07h
+Reg B=12h
+Reg HL=1000h
+IO port nr. 07h contain data 7Bh
+
+Then after the execution of
+<big><b>INI</b></big>
+Memory location 1000h will contain 7Bh, the HL register pair will contain
+1001h, and register B will contain 11h.
+</pre>
+
+</a><h2><a name="INI"></a><a name="INIR">
+<hr noshade="noshade" size="10">
+Detailed info <big>INIR</big></a></h2><a name="INIR">
+<big>Instruction Format:</big><p>
+</p><pre>OPCODE                   CYCLES
+--------------------------------------------
+ ED  B2         16 if B=0    21 if B &gt;&lt; 0
+
+Description:
+The contents of register C are placed on the bottom half (A0-A7) of the address
+bus to select the I/O device. Register B is used as a byte counter, and its
+contents are placed on the top half (A8-A15) af the address bus at this time.
+Then one byte from the selected port is placed on the data bus and written to the
+CPU. The contents of the HL register pair are pointer to store the redden byte
+in memory. The register pair HL is incremented, the byte counter B is decremented.
+If decrementing causes B to go to zero, the instruction is terminated. If B is not
+zero, the instruction is repeated.
+</pre>
+<big><b>Flags:</b></big>
+</a></dd><dd><a name="INIR"><big>C:</big>   Not affected.<br>
+</a></dd><dd><a name="INIR"><big>N:</big>   Set.<br>
+</a></dd><dd><a name="INIR"><big>P/V:</big> UnKnown.<br>
+</a></dd><dd><a name="INIR"><big>H:</big>   UnKnown.<br>
+</a></dd><dd><a name="INIR"><big>Z:</big>   Set.<br>
+</a></dd><dd><a name="INIR"><big>S:</big>   UnKnown.<br>
+<p><br>
+</p><pre>
+<big><b>Example:</b></big>
+
+Reg C=07h
+Reg B=03h
+Reg HL=1000h
+IO port nr. 07h contain data 51h, A9h, 03h
+
+Then after the execution of
+<big><b>INIR</b></big>
+The HL register pair will contain 1003h, and register B will contain zero,
+and memory locations will have contents as follows:
+
+Location:    Contents:
+1000h        51h
+1001h        A9h
+1002h        03h
+</pre>
+
+
+</a><h2><a name="INIR"></a><a name="JP">
+<hr noshade="noshade" size="10">
+Detailed info <big>JP</big></a></h2><p><a name="JP">
+JUMP to address.
+
+</a></p><h2><a name="JR">
+<hr noshade="noshade" size="10">
+Detailed info <big>JR</big></a></h2><p><a name="JR">
+JUMP to address, Relative
+
+
+</a></p><h2><a name="LD">
+<hr noshade="noshade" size="10">
+Detailed info <big>LD</big></a></h2><a name="LD">
+<big>Instruction Format:</big><p>
+</p><pre>OPCODE  r    r'                             CYCLES
+----------------------------------------------------
+  01   ddd  sss     LD   r,r'    dst,src      4
+
+
+Introductory note -- Binary form of opcodes
+
+  Example:   LD r,r'
+ 
+The 8-bit binary opcode is
+
+        r  r'
+     01dddsss
+ 
+   ...where "ddd" is a three-bit field specifying the destination,
+  and "sss" is a three-bit field specifying the source.
+ 
+the value for ddd and sss is shown below:
+
+Registers
+--------------
+ A = 111
+ B = 000
+ C = 001
+ D = 010
+ E = 011
+ H = 100
+ L = 101
+</pre>
+<p><br>
+<big>Operation: dst &lt;-- src </big></p><p>
+The contest of the source operand are loaded into the destination operand. The contents of the source operand are not affected.</p><p>
+<br>
+<big><b>Flags:</b></big><br>
+</p></a></dd><dd><a name="LD"><big>C:</big>   Unaffected.<br>
+</a></dd><dd><a name="LD"><big>N:</big>   Unaffected.<br>
+</a></dd><dd><a name="LD"><big>P/V:</big> Unaffected.<br>
+</a></dd><dd><a name="LD"><big>H:</big>   Unaffected.<br>
+</a></dd><dd><a name="LD"><big>Z:</big>   Unaffected.<br>
+</a></dd><dd><a name="LD"><big>S:</big>   Unaffected.<br>
+<p><br>
+</p><hr>
+<big>Example: </big>If register E, contains the value 10h, The statement:<p><big>
+ASM:    LD      H,E<br>
+OBJ:    63h</big></p><p>
+Loads the value 10H into register H.
+
+
+
+</p></a><h2><a name="LD"></a><a name="LDD">
+<hr noshade="noshade" size="10">
+Detailed info <big>LDD</big></a></h2><a name="LDD">
+<big>Instruction Format:</big><p>
+</p><pre>OPCODE          CYCLES
+-----------------------------
+ ED  A8           16 
+
+Description:
+This instruction transfers a byte of data from memory location addressed
+by the register pair HL, to the memory location addressed by the register pair DE.
+Then both af these register pairs including the BC (byte counter) register pair
+are decremented.
+</pre>
+
+<big><b>Flags:</b></big>
+</a></dd><dd><a name="LDD"><big>C:</big>   Not affected.<br>
+</a></dd><dd><a name="LDD"><big>N:</big>   reset.<br>
+</a></dd><dd><a name="LDD"><big>P/V:</big> Set if BC-1 is not 0, reset otherwise.<br>
+</a></dd><dd><a name="LDD"><big>H:</big>   Reset.<br>
+</a></dd><dd><a name="LDD"><big>Z:</big>   Not affected.<br>
+</a></dd><dd><a name="LDD"><big>S:</big>   Not affected.<br>
+
+
+
+
+</a><h2><a name="LDD"></a><a name="LDDR">
+<hr noshade="noshade" size="10">
+Detailed info <big>LDDR</big></a></h2><a name="LDDR">
+<big>Instruction Format:</big><p>
+</p><pre>OPCODE          CYCLES
+-----------------------------
+ ED  A8           16 
+
+Description:
+This instruction transfers a byte of data from memory location addressed
+by the register pair HL, to the memory location addressed by the register pair DE.
+Then both af these register pairs including the BC (byte counter) register pair
+are decremented.
+</pre>
+<big><b>Flags:</b></big>
+</a></dd><dd><a name="LDDR"><big>C:</big>   Not affected.<br>
+</a></dd><dd><a name="LDDR"><big>N:</big>   reset.<br>
+</a></dd><dd><a name="LDDR"><big>P/V:</big> Set if BC-1 is not 0, reset otherwise.<br>
+</a></dd><dd><a name="LDDR"><big>H:</big>   Reset.<br>
+</a></dd><dd><a name="LDDR"><big>Z:</big>   Not affected.<br>
+</a></dd><dd><a name="LDDR"><big>S:</big>   Not affected.<br>
+
+
+</a><h2><a name="LDDR"></a><a name="LDI">
+<hr noshade="noshade" size="10">
+Detailed info <big>LDI</big></a></h2><p><a name="LDI">
+LOAD AND INCREMENT
+
+</a></p><h2><a name="LDIR">
+<hr noshade="noshade" size="10">
+Detailed info <big>LDIR</big></a></h2><p><a name="LDIR">
+LOAD INCREMENT AND REPEAT
+
+</a></p><h2><a name="NEG">
+<hr noshade="noshade" size="10">
+Detailed info <big>NEG</big></a></h2><p><a name="NEG">
+NEGATE ACCUMULATOR 2'S COMPLEMENT
+
+</a></p><h2><a name="NOP">
+<hr noshade="noshade" size="10">
+Detailed info <big>NOP</big></a></h2><p><a name="NOP">
+NO OPERATION, not the most complicated instruction :-)
+
+</a></p><h2><a name="OR">
+<hr noshade="noshade" size="10">
+Detailed info <big>OR</big></a></h2><p><a name="OR">
+
+</a></p><h2><a name="OTDR">
+<hr noshade="noshade" size="10">
+Detailed info <big>OTDR</big></a></h2><p><a name="OTDR">
+OUTPUT, DEC HL, DEC B, REPEAT IF B&gt;0
+
+</a></p><h2><a name="OTIR">
+<hr noshade="noshade" size="10">
+Detailed info <big>OTIR</big></a></h2><p><a name="OTIR">
+OUTPUT, INC HL, DEC B, REPEAT IF B&gt;0
+
+</a></p><h2><a name="OUT">
+<hr noshade="noshade" size="10">
+Detailed info <big>OUT</big></a></h2><p><a name="OUT">
+OUTPUT TO PORT
+
+</a></p><h2><a name="OUTD">
+<hr noshade="noshade" size="10">
+Detailed info <big>OUTD</big></a></h2><p><a name="OUTD">
+OUTPUT, DEC HL, DEC B
+
+</a></p><h2><a name="OUTI">
+<hr noshade="noshade" size="10">
+Detailed info <big>OUTI</big></a></h2><p><a name="OUTI">
+OUTPUT, INC HL, DEC B
+
+</a></p><h2><a name="POP">
+<hr noshade="noshade" size="10">
+Detailed info <big>POP</big></a></h2><p><a name="POP">
+POP FROM STACK
+
+</a></p><h2><a name="PUSH">
+<hr noshade="noshade" size="10">
+Detailed info <big>PUSH</big></a></h2><p><a name="PUSH">
+PUSH INTO STACK
+
+</a></p><h2><a name="RES">
+<hr noshade="noshade" size="10">
+Detailed info <big>RES</big></a></h2><p><a name="RES">
+RESET BIT
+
+</a></p><h2><a name="RET">
+<hr noshade="noshade" size="10">
+Detailed info <big>RET</big></a></h2><p><a name="RET">
+RETURN FROM SUB ROUTINE
+
+</a></p><h2><a name="RETI">
+<hr noshade="noshade" size="10">
+Detailed info <big>RETI</big></a></h2><p><a name="RETI">
+RETURN FROM INTERRUPT
+
+</a></p><h2><a name="RETN">
+<hr noshade="noshade" size="10">
+Detailed info <big>RETN</big></a></h2><p><a name="RETN">
+RETURN FROM NON MASKABEL INTERRUPT
+
+</a></p><h2><a name="RL">
+<hr noshade="noshade" size="10">
+Detailed info <big>RL</big></a></h2><a name="RL">
+<big>Instruction Format:</big><p>
+<img src="z80syntx_files/zrl.gif" align="top"><br>
+</p><p>
+<b>
+ASM: RL B<br>
+OBJ: CBh, 10h<br>
+</b>Tstates : 8.</p><p><b>
+
+ASM: RL C<br>
+OBJ: CBh, 11h<br>
+</b>Tstates : 8.</p><p><b>
+
+ASM: RL D<br>
+OBJ: CBh, 12h<br>
+</b>Tstates : 8.</p><p><b>
+
+ASM: RL E<br>
+OBJ: CBh, 13h<br>
+</b>Tstates : 8.</p><p><b>
+
+ASM: RL H<br>
+OBJ: CBh, 14h<br>
+</b>Tstates : 8.</p><p><b>
+
+ASM: RL L<br>
+OBJ: CBh, 15h<br>
+</b>Tstates : 8.</p><p><b>
+
+ASM: RL A<br>
+OBJ: CBh, 17h<br>
+</b>Tstates : 8.</p><p><b>
+
+ASM: RL (HL)<br>
+OBJ: CBh, 16h<br>
+</b>Tstates : 15.</p><p><b>
+
+ASM: RL (IX+D)<br>
+OBJ: DDh, CBh, XX, 16h<br>
+</b>Tstates : 23.</p><p><b>
+
+ASM: RL (IY+D)<br>
+OBJ: FDh, CBh, XX, 16h<br>
+</b>Tstates : 23.</p><p>
+XX is the offset value.
+
+
+</p></a><h2><a name="RL"></a><a name="RLA">
+<hr noshade="noshade" size="10">
+Detailed info <big>RLA</big></a></h2><a name="RLA">
+<big>Instruction Format:</big><p>
+<img src="z80syntx_files/zrl.gif" align="top"><br>
+</p><p>
+<b>
+ASM: RLA<br>
+OBJ: 17h<br>
+</b>Tstates : 4.</p><p>
+
+
+</p></a><h2><a name="RLA"></a><a name="RLC">
+<hr noshade="noshade" size="10">
+Detailed info <big>RLC</big></a></h2><a name="RLC">
+<big>Instruction Format:</big><p>
+<img src="z80syntx_files/zrlc.gif" align="top"><br>
+</p><p>
+<b>
+ASM: RLC B<br>
+OBJ: CBh, 00h<br>
+</b>Tstates : 8.</p><p><b>
+
+ASM: RLC C<br>
+OBJ: CBh, 01h<br>
+</b>Tstates : 8.</p><p><b>
+
+ASM: RLC D<br>
+OBJ: CBh, 02h<br>
+</b>Tstates : 8.</p><p><b>
+
+ASM: RLC E<br>
+OBJ: CBh, 03h<br>
+</b>Tstates : 8.</p><p><b>
+
+ASM: RLC H<br>
+OBJ: CBh, 04h<br>
+</b>Tstates : 8.</p><p><b>
+
+ASM: RLC L<br>
+OBJ: CBh, 05h<br>
+</b>Tstates : 8.</p><p><b>
+
+ASM: RLC A<br>
+OBJ: CBh, 07h<br>
+</b>Tstates : 8.</p><p><b>
+
+ASM: RLC (HL)<br>
+OBJ: CBh, 06h<br>
+</b>Tstates : 15.</p><p><b>
+
+ASM: RLC (IX+D)<br>
+OBJ: DDh, CBh, XX, 06h<br>
+</b>Tstates : 23.</p><p><b>
+
+ASM: RLC (IY+D)<br>
+OBJ: FDh, CBh, XX, 06h<br>
+</b>Tstates : 23.</p><p>
+XX is the offset value.
+
+
+
+</p></a><h2><a name="RLC"></a><a name="RLCA">
+<hr noshade="noshade" size="10">
+Detailed info <big>RLCA</big></a></h2><a name="RLCA">
+<big>Instruction Format:</big><p>
+<img src="z80syntx_files/zrlc.gif" align="top"><br>
+</p><p>
+<b>
+ASM: RLCA<br>
+OBJ: 07h<br>
+</b>Tstates : 4.</p><p>
+
+
+</p></a><h2><a name="RLCA"></a><a name="RLD">
+<hr noshade="noshade" size="10">
+Detailed info <big>RLD</big></a></h2><a name="RLD">
+<big>Instruction Format:</big><p>
+<img src="z80syntx_files/zrld.gif" align="top"><br>
+</p><p>
+<b>
+ASM: RLD<br>
+OBJ: EDh, 6Fh<br>
+</b>Tstates : 18.</p><p>
+
+
+</p></a><h2><a name="RLD"></a><a name="RR">
+<hr noshade="noshade" size="10">
+Detailed info <big>RR</big></a></h2><a name="RR">
+<big>Instruction Format:</big><p>
+<img src="z80syntx_files/zrra.gif" align="top"><br>
+</p><p>
+<b>
+ASM: RR B<br>
+OBJ: CBh, 18h<br>
+</b>Tstates : 8.</p><p><b>
+
+ASM: RR C<br>
+OBJ: CBh, 19h<br>
+</b>Tstates : 8.</p><p><b>
+
+ASM: RR D<br>
+OBJ: CBh, 1Ah<br>
+</b>Tstates : 8.</p><p><b>
+
+ASM: RR E<br>
+OBJ: CBh, 1Bh<br>
+</b>Tstates : 8.</p><p><b>
+
+ASM: RR H<br>
+OBJ: CBh, 1Ch<br>
+</b>Tstates : 8.</p><p><b>
+
+ASM: RR L<br>
+OBJ: CBh, 1Dh<br>
+</b>Tstates : 8.</p><p><b>
+
+ASM: RR A<br>
+OBJ: CBh, 1Fh<br>
+</b>Tstates : 8.</p><p><b>
+
+ASM: RR (HL)<br>
+OBJ: CBh, 1Eh<br>
+</b>Tstates : 15.</p><p><b>
+
+ASM: RR (IX+D)<br>
+OBJ: DDh, CBh, XX, 1Eh<br>
+</b>Tstates : 23.</p><p><b>
+
+ASM: RR (IY+D)<br>
+OBJ: FDh, CBh, XX, 1Eh<br>
+</b>Tstates : 23.</p><p>
+XX is the offset value.
+
+
+</p></a><h2><a name="RR"></a><a name="RRA">
+<hr noshade="noshade" size="10">
+Detailed info <big>RRA</big></a></h2><a name="RRA">
+<big>Instruction Format:</big><p>
+<img src="z80syntx_files/zrra.gif" align="top"><br>
+</p><p>
+<b>
+ASM: RRA<br>
+OBJ: 1Fh<br>
+</b>Tstates : 4.</p><p>
+
+
+
+</p></a><h2><a name="RRA"></a><a name="RRC">
+<hr noshade="noshade" size="10">
+Detailed info <big>RRC</big></a></h2><a name="RRC">
+<big>Instruction Format:</big><p>
+<img src="z80syntx_files/zrrc.gif" align="top"><br>
+</p><p>
+<b>
+ASM: RRC B<br>
+OBJ: CBh, 08h<br>
+</b>Tstates : 8.</p><p><b>
+
+ASM: RRC C<br>
+OBJ: CBh, 09h<br>
+</b>Tstates : 8.</p><p><b>
+
+ASM: RRC D<br>
+OBJ: CBh, 0Ah<br>
+</b>Tstates : 8.</p><p><b>
+
+ASM: RRC E<br>
+OBJ: CBh, 0Bh<br>
+</b>Tstates : 8.</p><p><b>
+
+ASM: RRC H<br>
+OBJ: CBh, 0Ch<br>
+</b>Tstates : 8.</p><p><b>
+
+ASM: RRC L<br>
+OBJ: CBh, 0Dh<br>
+</b>Tstates : 8.</p><p><b>
+
+ASM: RRC A<br>
+OBJ: CBh, 0Fh<br>
+</b>Tstates : 8.</p><p><b>
+
+ASM: RRC (HL)<br>
+OBJ: CBh, 0Eh<br>
+</b>Tstates : 15.</p><p><b>
+
+ASM: RRC (IX+D)<br>
+OBJ: DDh, CBh, XX, 0Eh<br>
+</b>Tstates : 23.</p><p><b>
+
+ASM: RRC (IY+D)<br>
+OBJ: FDh, CBh, XX, 0Eh<br>
+</b>Tstates : 23.</p><p>
+XX is the offset value.
+
+
+
+</p></a><h2><a name="RRC"></a><a name="RRCA">
+<hr noshade="noshade" size="10">
+Detailed info <big>RRCA</big></a></h2><a name="RRCA">
+<big>Instruction Format:</big><p>
+<img src="z80syntx_files/zrrc.gif" align="top"><br>
+</p><p>
+<b>
+ASM: RRCA<br>
+OBJ: 0Fh<br>
+</b>Tstates : 4.</p><p>
+
+</p></a><h2><a name="RRCA"></a><a name="RRD">
+<hr noshade="noshade" size="10">
+Detailed info <big>RRD</big></a></h2><a name="RRD">
+<big>Instruction Format:</big><p>
+<img src="z80syntx_files/zrrd.gif" align="top"><br>
+ROTATE RIGHT DIGIT</p><p>
+<b>
+ASM: RRD<br>
+OBJ: EDh, 67h<br>
+</b>Tstates : 18.</p><p>
+
+</p></a><h2><a name="RRD"></a><a name="RST">
+<hr noshade="noshade" size="10">
+Detailed info <big>RST</big></a></h2><a name="RST">
+<big>Instruction Format:</big><p>
+</p><pre>OPCODE   CALL ADDRESS   MNEMONIC    CYCLES
+----------------------------------------------------
+  C7h    0000h          RST 0
+  CFh    0008h          RST 8
+  D7h    0010h          RST 16
+  DFh    0018h          RST 24
+  E7h    0020h          RST 32
+  EFh    0028h          RST 40
+  F7h    0030h          RST 48
+  FFh    0038h          RST 56
+</pre>
+
+</a><h2><a name="RST"></a><a name="SBC">
+<hr noshade="noshade" size="10">
+Detailed info <big>SBC</big></a></h2><p><a name="SBC">
+SUBTRACT WITH CARRY
+
+
+
+</a></p><h2><a name="SCF">
+<hr noshade="noshade" size="10">
+Detailed info <big>SCF</big></a></h2><p><a name="SCF">
+Opperation: CY = 1<br></a></p><p><a name="SCF">
+
+<big>Instruction Format:</big></a></p><p><a name="SCF">
+      Opcode: SCF<br>
+      OBJ: 37h <br> </a></p><p><a name="SCF">
+<big>Description:</big></a></p><p><a name="SCF">
+The Carry flag in the flags register is set (1).<br></a></p><p><a name="SCF">
+Tstates: 4.<br></a></p><p><a name="SCF">
+<big><b>Flags:</b></big>
+</a></p></dd><dd><a name="SCF"><big>S:</big>   Not affected.<br>
+</a></dd><dd><a name="SCF"><big>Z:</big>   Not affected.<br>
+</a></dd><dd><a name="SCF"><big>H:</big>   Reset<br>
+</a></dd><dd><a name="SCF"><big>P/V:</big> Not affected.<br>
+</a></dd><dd><a name="SCF"><big>N:</big>   Reset.<br>
+</a></dd><dd><a name="SCF"><big>C:</big>   Set<br><p>
+
+
+</p></a><h2><a name="SCF"></a><a name="SET">
+<hr noshade="noshade" size="10">
+Detailed info <big>SET b, r</big></a></h2><a name="SET">
+Operation:  rb = 1<br>
+
+<big>Instruction Format:</big><p>
+
+<img src="z80syntx_files/zset_br.gif" align="top"> CBh<br></p><p>
+
+Bit b in register r is set. Operands b and r are specified as follows:<br>
+
+</p><pre>Bit   b        Register   r
+ 0   000          B      000
+ 1   001          C      001
+ 2   010          D      010 
+ 3   011          E      011
+ 4   100          H      100 
+ 5   101          L      101
+ 6   110          A      111
+ 7   111
+</pre>
+Tstates: 8.<br>
+<big><b>Flags:</b></big> None Affected<br><p>
+<big>Example: </big><br>
+ASM:    SET 3,D<br>
+OBJ:    CBh, DAh</p><p>
+
+</p><hr width="80%"><h2>
+Detailed info <big>SET b, (HL)</big></h2>
+Operation:  (HL)b = 1<br>
+
+<big>Instruction Format:</big><p>
+
+<img src="z80syntx_files/zset_bhl.gif" align="top"> CBh<br></p><p>
+
+Bit b in the memory location addressed by the contents of register pair HL is set. Operands b is specified as follows:<br>
+
+</p><pre>Bit   b
+ 0   000
+ 1   001
+ 2   010 
+ 3   011
+ 4   100 
+ 5   101
+ 6   110
+ 7   111
+</pre>
+
+Tstates: 15.<br>
+<big><b>Flags:</b></big> None Affected<br><p>
+<big>Example: </big><br>
+ASM:    SET 5,(HL)<br>
+OBJ:    CBh, EEh</p><p>
+</p><hr width="80%">
+<h2>
+Detailed info <big>SET b, (IX+d)</big></h2>
+Operation:  (IX+d)b = 1<br>
+<big>Instruction Format:</big><p>
+<img src="z80syntx_files/zset_bix.gif" align="top"> DDh<br>
+<img src="z80syntx_files/zset_bii.gif" align="top"> CBh</p><p>
+
+Bit b is set, in the memory location addressed by the sum of the contents of register IX and the two's complement integer d. (d = adr. offset)<br>
+Operands b is specified as follows:<br>
+
+</p><pre>Bit   b
+ 0   000
+ 1   001
+ 2   010 
+ 3   011
+ 4   100 
+ 5   101
+ 6   110
+ 7   111
+</pre>
+
+Tstates: 23.<br>
+<big><b>Flags:</b></big> None Affected<br><p>
+<big>Example: </big><br>
+ASM:    SET 0,(IX+3h)<br>
+OBJ:    DDh, CBh, 03h, C6h</p><p><br></p><p>
+If the contents of index Register IX are 2000h, then bit 0 in memory location 2003h will be 1 (set).<br>
+Bit 0 is the least significant bit)
+
+</p><hr width="80%">
+
+<h2>
+Detailed info <big>SET b, (IY+d)</big></h2>
+Operation:  (IY+d)b = 1<br>
+<big>Instruction Format:</big><p>
+<img src="z80syntx_files/zset_biy.gif" align="top"> FDh<br>
+<img src="z80syntx_files/zset_bii.gif" align="top"> CBh</p><p>
+
+Bit b is set, in the memory location addressed by the sum of the contents of register IY and the two's complement integer d. (d = adr. offset)<br>
+Operands b is specified as follows:<br>
+
+</p><pre>Bit   b
+ 0   000
+ 1   001
+ 2   010 
+ 3   011
+ 4   100 
+ 5   101
+ 6   110
+ 7   111
+</pre>
+
+Tstates: 23.<br>
+<big><b>Flags:</b></big> None Affected<br><p>
+<big>Example: </big><br>
+ASM:    SET 0,(IY+47h)<br>
+OBJ:    DDh, CBh, 47h, C6h</p><p><br></p><p>
+If the contents of index Register IX are 2000h, then bit 0 in memory location 2047h will be 1 (set).<br>
+Bit 0 is the least significant bit)
+
+
+</p></a><h2><a name="SET"></a><a name="SLA">
+<hr noshade="noshade" size="10">
+Detailed info <big>SLA</big></a></h2><a name="SLA">
+<big>Instruction Format:</big><p>
+<img src="z80syntx_files/zsla.gif" align="top"><br>
+</p><p>
+<b>
+ASM: SLA B<br>
+OBJ: CBh, 20h<br>
+</b>Tstates : 8.</p><p><b>
+
+ASM: SLA C<br>
+OBJ: CBh, 21h<br>
+</b>Tstates : 8.</p><p><b>
+
+ASM: SLA D<br>
+OBJ: CBh, 22h<br>
+</b>Tstates : 8.</p><p><b>
+
+ASM: SLA E<br>
+OBJ: CBh, 23h<br>
+</b>Tstates : 8.</p><p><b>
+
+ASM: SLA H<br>
+OBJ: CBh, 24h<br>
+</b>Tstates : 8.</p><p><b>
+
+ASM: SLA L<br>
+OBJ: CBh, 25h<br>
+</b>Tstates : 8.</p><p><b>
+
+ASM: SLA A<br>
+OBJ: CBh, 27h<br>
+</b>Tstates : 8.</p><p><b>
+
+ASM: SLA (HL)<br>
+OBJ: CBh, 26h<br>
+</b>Tstates : 15.</p><p><b>
+
+ASM: SLA (IX+D)<br>
+OBJ: DDh, CBh, XX, 26h<br>
+</b>Tstates : 23.</p><p><b>
+
+ASM: SLA (IY+D)<br>
+OBJ: FDh, CBh, XX, 26h<br>
+</b>Tstates : 23.</p><p>
+XX is the offset value.
+
+
+</p></a><h2><a name="SLA"></a><a name="SRA">
+<hr noshade="noshade" size="10">
+Detailed info <big>SRA</big></a></h2><a name="SRA">
+<big>Instruction Format:</big><p>
+<img src="z80syntx_files/zsra.gif" align="top"><br>
+</p><p>
+<b>
+ASM: SRA B<br>
+OBJ: CBh, 28h<br>
+</b>Tstates : 8.</p><p><b>
+
+ASM: SRA C<br>
+OBJ: CBh, 29h<br>
+</b>Tstates : 8.</p><p><b>
+
+ASM: SRA D<br>
+OBJ: CBh, 2Ah<br>
+</b>Tstates : 8.</p><p><b>
+
+ASM: SRA E<br>
+OBJ: CBh, 2Bh<br>
+</b>Tstates : 8.</p><p><b>
+
+ASM: SRA H<br>
+OBJ: CBh, 2Ch<br>
+</b>Tstates : 8.</p><p><b>
+
+ASM: SRA L<br>
+OBJ: CBh, 2Dh<br>
+</b>Tstates : 8.</p><p><b>
+
+ASM: SRA A<br>
+OBJ: CBh, 2Fh<br>
+</b>Tstates : 8.</p><p><b>
+
+ASM: SRA (HL)<br>
+OBJ: CBh, 2Eh<br>
+</b>Tstates : 15.</p><p><b>
+
+ASM: SRA (IX+D)<br>
+OBJ: DDh, CBh, XX, 2Eh<br>
+</b>Tstates : 23.</p><p><b>
+
+ASM: SRA (IY+D)<br>
+OBJ: FDh, CBh, XX, 2Eh<br>
+</b>Tstates : 23.</p><p>
+XX is the offset value.
+
+
+</p></a><h2><a name="SRA"></a><a name="SRL">
+<hr noshade="noshade" size="10">
+Detailed info <big>SRL</big></a></h2><a name="SRL">
+<big>Instruction Format:</big><p>
+<img src="z80syntx_files/zsrl.gif" align="top"><br>
+</p><p>
+<b>
+ASM: SRL B<br>
+OBJ: CBh, 38h<br>
+</b>Tstates : 8.</p><p><b>
+
+ASM: SRL C<br>
+OBJ: CBh, 39h<br>
+</b>Tstates : 8.</p><p><b>
+
+ASM: SRL D<br>
+OBJ: CBh, 3Ah<br>
+</b>Tstates : 8.</p><p><b>
+
+ASM: SRL E<br>
+OBJ: CBh, 3Bh<br>
+</b>Tstates : 8.</p><p><b>
+
+ASM: SRL H<br>
+OBJ: CBh, 3Ch<br>
+</b>Tstates : 8.</p><p><b>
+
+ASM: SRL L<br>
+OBJ: CBh, 3Dh<br>
+</b>Tstates : 8.</p><p><b>
+
+ASM: SRL A<br>
+OBJ: CBh, 3Fh<br>
+</b>Tstates : 8.</p><p><b>
+
+ASM: SRL (HL)<br>
+OBJ: CBh, 3Eh<br>
+</b>Tstates : 15.</p><p><b>
+
+ASM: SRL (IX+D)<br>
+OBJ: DDh, CBh, XX, 3Eh<br>
+</b>Tstates : 23.</p><p><b>
+
+ASM: SRL (IY+D)<br>
+OBJ: FDh, CBh, XX, 3Eh<br>
+</b>Tstates : 23.</p><p>
+XX is the offset value.
+
+</p></a><h2><a name="SRL"></a><a name="SUB">
+<hr noshade="noshade" size="10">
+Detailed info <big>SUB</big></a></h2><a name="SUB">
+Operation:  A = A - s<br>
+The s operand is subtracted from the contents of the accumulator, and the result is stored in the Accumulator.<br><p>
+<b>
+ASM: SUB B<br>
+OBJ: 90h<br>
+</b>Tstates : 4.</p><p><b>
+ 
+ASM: SUB C<br>
+OBJ: 91h<br>
+</b>Tstates : 4.</p><p><b>
+ 
+ASM: SUB D<br>
+OBJ: 92h<br>
+</b>Tstates : 4.</p><p><b>
+ 
+ASM: SUB E<br>
+OBJ: 93h<br>
+</b>Tstates : 4.</p><p><b>
+ 
+ASM: SUB H<br>
+OBJ: 94h<br>
+</b>Tstates : 4.</p><p><b>
+ 
+ASM: SUB L<br>
+OBJ: 95h<br>
+</b>Tstates : 4.</p><p><b>
+ 
+ASM: SUB A<br>
+OBJ: 97h<br>
+</b>Tstates : 4.</p><p><b>
+ 
+ASM: SUB n<br>
+OBJ: D6h, n<br>
+</b>Tstates : 7.</p><p><b>
+ 
+ASM: SUB (HL)<br>
+OBJ: 96h<br>
+</b>Tstates : 7.</p><p><b>
+ 
+ASM: SUB (IX+d)<br>
+OBJ: DDh, 96h, d<br>
+</b>Tstates : 19.</p><p><b>
+ 
+ASM: SUB (IY+d)<br>
+OBJ: FDh, 96h, d<br>
+</b>Tstates : 19.</p><p>
+ 
+
+<big><b>Flags:</b></big>
+</p></a></dd><dd><a name="SUB"><big>S:</big>   Set if result is negative, reset otherwise.<br>
+</a></dd><dd><a name="SUB"><big>Z:</big>   Set if result is Zero, reset otherwise.<br>
+</a></dd><dd><a name="SUB"><big>H:</big>   Set if borrow from Bit4, reset otherwise.<br>
+</a></dd><dd><a name="SUB"><big>P/V:</big> Set if overflow, reset otherwise.<br>
+</a></dd><dd><a name="SUB"><big>N:</big>   Reset.<br>
+</a></dd><dd><a name="SUB"><big>C:</big>   Set if borrow, reset otherwise.<br><p>
+
+<big>Example: </big>If Accumulator contains 29h, and register D contains 11h, after the execution of:</p><p><big>
+ASM:    SUB D<br>
+OBJ:    92h</big></p><p>
+The Accumulator will contain 18h.
+
+</p></a><h2><a name="SUB"></a><a name="XOR">
+<hr noshade="noshade" size="10">
+Detailed info <big>XOR</big></a></h2><a name="XOR">
+Operation:  A = A xor s<br>
+A logical exclusive-OR opperation is performed between the byte specified by the s opperand
+and the byte contained in the Accumulator, the result is stored in the Accumulator.<br><p>
+<b>
+ASM: XOR B<br>
+OBJ: A8h<br>
+</b>Tstates : 4.</p><p><b>
+
+ASM: XOR C<br>
+OBJ: A9h<br>
+</b>Tstates : 4.</p><p><b>
+
+ASM: XOR D<br>
+OBJ: AAh<br>
+</b>Tstates : 4.</p><p><b>
+
+ASM: XOR E<br>
+OBJ: ABh<br>
+</b>Tstates : 4.</p><p><b>
+
+ASM: XOR H<br>
+OBJ: ACh<br>
+</b>Tstates : 4.</p><p><b>
+
+ASM: XOR L<br>
+OBJ: ADh<br>
+</b>Tstates : 4.</p><p><b>
+
+ASM: XOR A<br>
+OBJ: AFh<br>
+</b>Tstates : 4.</p><p><b>
+
+ASM: XOR n<br>
+OBJ: EEh, n<br>
+</b>Tstates : 7.</p><p><b>
+
+ASM: XOR (HL)<br>
+OBJ: AEh<br>
+</b>Tstates : 7.</p><p><b>
+
+ASM: XOR (IX+d)<br>
+OBJ: DDh, AEh, d<br>
+</b>Tstates : 19.</p><p><b>
+
+ASM: XOR (IY+d)<br>
+OBJ: FDh, AEh, d<br>
+</b>Tstates : 19.</p><p>
+
+
+<big><b>Flags:</b></big>
+</p></a></dd><dd><a name="XOR"><big>S:</big>   Set if result is negative, reset otherwise.<br>
+</a></dd><dd><a name="XOR"><big>Z:</big>   Set if result is Zero, reset otherwise.<br>
+</a></dd><dd><a name="XOR"><big>H:</big>   Reset.<br>
+</a></dd><dd><a name="XOR"><big>P/V:</big> Set if parity even, reset otherwise.<br>
+</a></dd><dd><a name="XOR"><big>N:</big>   Reset.<br>
+</a></dd><dd><a name="XOR"><big>C:</big>   Reset.<br><p>
+
+<big>Example: </big>If the Accumulator contains 96h (10010110),
+and register D contains 5Dh (01011101) , after the execution of:</p><p><big>
+ASM:    XOR D<br>
+OBJ:    AAh</big></p><p>
+The Accumulator will contain CBh (11001011).<br>
+
+</p><hr noshade="noshade" size="10">
+
+</a></dd></pre></dd></body></html>

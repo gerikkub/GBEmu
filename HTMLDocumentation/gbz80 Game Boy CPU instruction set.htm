@@ -1,0 +1,219 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html><head><title>gbz80 – Game Boy CPU instruction set</title>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<link rel="stylesheet" href="gbz80%20%E2%80%93%20Game%20Boy%20CPU%20instruction%20set_files/manual.css">
+</head><body>
+<h1><span class="nm">gbz80</span> – Game Boy CPU instruction set</h1>
+
+<h2>Description</h2>
+<p>The Game Boy CPU, commonly called the “gbz80,” is a derivative of the
+ 8080 processor. Sharp manufactures it as the LR35902. Assemblers tend 
+to use Z80 syntax, but it is not identical to the z80 – for instance, it
+ lacks IX and IY registers. This manual describes the opcodes of this 
+processor.</p>
+
+<h3>add HL 16</h3>
+<p>Add – Add a 16-bit register to hl.</p>
+<dl>
+<dt>z</dt><dd>Unaffected.</dd>
+<dt>n</dt><dd>Reset.</dd>
+<dt>h</dt><dd>Set if carry from bit 11.</dd>
+<dt>c</dt><dd>Set if carry from bt 15.</dd>
+</dl>
+<ul>
+<li>$09 – add hl,bc</li>
+<li>$19 – add hl,de</li>
+<li>$29 – add hl,hl</li>
+<li>$39 – add hl,sp</li>
+</ul>
+
+<h3>dec 16</h3>
+<p>Decrement – Decrement a 16-bit register.</p>
+<dl>
+<dt>z</dt><dd>Unaffected.</dd>
+<dt>n</dt><dd>Unaffected.</dd>
+<dt>h</dt><dd>Unaffected.</dd>
+<dt>c</dt><dd>Unaffected.</dd>
+</dl>
+<ul>
+<li>$0B – dec bc</li>
+<li>$1B – dec de</li>
+<li>$2B – dec hl</li>
+<li>$3B – dec sp</li>
+</ul>
+
+<h3>dec 8</h3>
+<p>Decrement – Decrement an 8-bit register.</p>
+<dl>
+<dt>z</dt><dd>Set if result is zero.</dd>
+<dt>n</dt><dd>Set.</dd>
+<dt>h</dt><dd>Set if no borrow from bit 4.</dd>
+<dt>c</dt><dd>Unaffected.</dd>
+</dl>
+<ul>
+<li>$05 – dec b</li>
+<li>$0D – dec c</li>
+<li>$15 – dec d</li>
+<li>$1D – dec e</li>
+<li>$25 – dec h</li>
+<li>$2D – dec l</li>
+<li>$35 – dec (hl)</li>
+<li>$3D – dec a</li>
+</ul>
+
+<h3>inc 16</h3>
+<p>Increment – Increment a 16-bit register.</p>
+<dl>
+<dt>z</dt><dd>Unaffected.</dd>
+<dt>n</dt><dd>Unaffected.</dd>
+<dt>h</dt><dd>Unaffected.</dd>
+<dt>c</dt><dd>Unaffected.</dd>
+</dl>
+<ul>
+<li>$03 – inc bc</li>
+<li>$13 – inc de</li>
+<li>$23 – inc hl</li>
+<li>$33 – inc sp</li>
+</ul>
+
+<h3>inc 8</h3>
+<p>Increment – Increment an 8-bit register.</p>
+<dl>
+<dt>z</dt><dd>Set if result is zero.</dd>
+<dt>n</dt><dd>Reset.</dd>
+<dt>h</dt><dd>Set if carry from bit 3.</dd>
+<dt>c</dt><dd>Unaffected.</dd>
+</dl>
+<ul>
+<li>$04 – inc b</li>
+<li>$0C – inc c</li>
+<li>$14 – inc d</li>
+<li>$1C – inc e</li>
+<li>$24 — inc h</li>
+<li>$2C – inc l</li>
+<li>$34 – inc (hl)</li>
+<li>$3C – inc a</li>
+</ul>
+
+<h3>jr cond 2C</h3>
+<p>Jump Relative – If the condition is true, then add a two’s-complement value to the program counter.</p>
+<dl>
+<dt>z</dt><dd>Unaffected.</dd>
+<dt>n</dt><dd>Unaffected.</dd>
+<dt>h</dt><dd>Unaffected.</dd>
+<dt>c</dt><dd>Unaffected.</dd>
+</dl>
+<ul>
+<li>$18 $XX – jr $XX</li>
+<li>$20 $XX – jr nz,$XX</li>
+<li>$28 $XX – jr z,$XX</li>
+<li>$30 $XX – jr nc,$XX</li>
+<li>$38 $XX – jr c,$XX</li>
+</ul>
+
+<h3>ld 16 16val</h3>
+<p>Load – Copy a 16-bit value to a 16-bit register.</p>
+<dl>
+<dt>z</dt><dd>Unaffected.</dd>
+<dt>n</dt><dd>Unaffected.</dd>
+<dt>h</dt><dd>Unaffected.</dd>
+<dt>c</dt><dd>Unaffected.</dd>
+</dl>
+<ul>
+<li>$01 $YY $XX – ld bc,$XXYY</li>
+<li>$11 $YY $XX – ld de,$XXYY</li>
+<li>$21 $YY $XX – ld hl,$XXYY</li>
+<li>$31 $YY $XX – ld sp,$XXYY</li>
+</ul>
+
+<h3>ld 8 8</h3>
+<p>Load – Copy an 8-bit register to another 8-bit register.</p>
+<dl>
+<dt>z</dt><dd>Unaffected.</dd>
+<dt>n</dt><dd>Unaffected.</dd>
+<dt>h</dt><dd>Unaffected.</dd>
+<dt>c</dt><dd>Unaffected.</dd>
+</dl>
+<ul>
+<li>$40 – ld b,b</li>
+<li>$41 – ld b,c</li>
+<li>$42 – ld b,d</li>
+<li>$43 – ld b,e</li>
+<li>$44 – ld b,h</li>
+<li>$45 – ld b,l</li>
+<li>$46 – ld b,(hl)</li>
+<li>$47 – ld b,a</li>
+<li>$48 – ld c,b</li>
+<li>$49 – ld c,c</li>
+<li>$4A – ld c,d</li>
+<li>$4B – ld c,e</li>
+<li>$4C – ld c,h</li>
+<li>$4D – ld c,l</li>
+<li>$4E – ld c,(hl)</li>
+<li>$4F – ld c,a</li>
+<li>$50 – ld d,b</li>
+<li>$51 – ld d,c</li>
+<li>$52 – ld d,d</li>
+<li>$53 – ld d,e</li>
+<li>$54 – ld d,h</li>
+<li>$55 – ld d,l</li>
+<li>$56 – ld d,(hl)</li>
+<li>$57 – ld d,a</li>
+<li>$58 – ld e,b</li>
+<li>$59 – ld e,c</li>
+<li>$5A – ld e,d</li>
+<li>$5B – ld e,e</li>
+<li>$5C – ld e,h</li>
+<li>$5D – ld e,l</li>
+<li>$5E – ld e,(hl)</li>
+<li>$5F – ld e,a</li>
+<li>$60 – ld h,b</li>
+<li>$61 – ld h,c</li>
+<li>$62 – ld h,d</li>
+<li>$63 – ld h,e</li>
+<li>$64 – ld h,h</li>
+<li>$65 – ld h,l</li>
+<li>$66 – ld h,(hl)</li>
+<li>$67 – ld h,a</li>
+<li>$68 – ld l,b</li>
+<li>$69 – ld l,c</li>
+<li>$6A – ld l,d</li>
+<li>$6B – ld l,e</li>
+<li>$6C – ld l,h</li>
+<li>$6D – ld l,l</li>
+<li>$6E – ld l,(hl)</li>
+<li>$6F – ld l,a</li>
+<li>$70 – ld (hl),b</li>
+<li>$71 – ld (hl),c</li>
+<li>$72 – ld (hl),d</li>
+<li>$73 – ld (hl),e</li>
+<li>$74 – ld (hl),h</li>
+<li>$75 – ld (hl),l</li>
+<li>$77 – ld (hl),a</li>
+<li>$78 – ld a,b</li>
+<li>$79 – ld a,c</li>
+<li>$7A – ld a,d</li>
+<li>$7B – ld a,e</li>
+<li>$7C – ld a,h</li>
+<li>$7D – ld a,l</li>
+<li>$7E – ld a,(hl)</li>
+<li>$7F – ld a,a</li>
+</ul>
+
+<h3>nop</h3>
+<p>No Operation – Do nothing.</p>
+<dl>
+<dt>z</dt><dd>Unaffected.</dd>
+<dt>n</dt><dd>Unaffected.</dd>
+<dt>h</dt><dd>Unaffected.</dd>
+<dt>c</dt><dd>Unaffected.</dd>
+</dl>
+<ul>
+<li>$00 – nop</li>
+</ul>
+
+<h2>History</h2>
+<p><span class="nm">rgbfix</span> was originally released by Carsten 
+Sørensen as a standalone program called gbfix. It was later integrated 
+with the ASMotor package, which became RGBDS.</p>
+</body></html>
