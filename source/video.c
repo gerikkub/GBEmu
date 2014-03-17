@@ -70,6 +70,16 @@ int spriteFrontBuffer[160][144];
 
 SDL_Surface *display;
 
+SDL_sem *drawVideoStartSem;
+SDL_sem *drawVideoCompleteSem;
+SDL_sem *fillBuffersSem;
+SDL_sem *spriteStartSem;
+SDL_sem *windowStartSem;
+SDL_sem *backgroundStartSem;
+SDL_sem *spriteEndSem;
+SDL_sem *windowEndSem;
+SDL_sem *backgroundEndSem;
+
 typedef int drawBuffer[160][144];
 
 typedef struct tileLine_T {
@@ -202,14 +212,20 @@ void updateVideo(int screenRefreshCount){
 	
 	int temp;
 	
+	fillBuffersSem = SDL_CreateSemaphore(0);
+	drawVideoStartSem = SDL_CreateSemaphore(0);
+	drawVideoCompleteSem = SDL_CreateSemaphore(1);
+
 	if(screenRefreshCount<65664){	//Not in V-Blank
 	
 		if(screenRefreshCount == 0){
-			while(drawingComplete == 0);
+			//while(drawingComplete == 0);
+			//SDL_SemWait(drawVideoCompleteSem);
 			drawingComplete = 0;
 			(*LY) = 0;
 			*LCDStatus=((*LCDStatus)&0xFC)|LCD_MODE2;			
-			shouldFillBuffers=1;
+			//shouldFillBuffers=1;
+			SDL_SemPost(fillBuffersSem);
 			
 			//If Mode 2 interrupt enabled
 			if(((*LCDStatus)&0x20)!=0){
@@ -252,6 +268,7 @@ void updateVideo(int screenRefreshCount){
 	
 		buffersFull = 0;
 		shouldRedraw = 1;
+		SDL_SemPost(drawVideoStartSem);
 		*LCDStatus=((*LCDStatus)&0xFC)|LCD_MODE1;
 		*LY = (*LY) + 1;
 		
@@ -414,9 +431,9 @@ int backgroundBufferFill(void *arguments){
 	//char tilesBuffered[160][144];
 	
 	while(1){
-		while((*beginFillingBackgroundBuffer)==0){
-			//Nothing
-		}
+		//while(*beginFillingBackgroundBuffer == 0);
+		SDL_SemWait(backgroundStartSem);
+		//SDL_SemWait(backgroundSem);
 		*beginFillingBackgroundBuffer = 0;
 		*backgroundBufferComplete = 0;
 		
@@ -477,6 +494,7 @@ int backgroundBufferFill(void *arguments){
 		}
 		
 		*backgroundBufferComplete = 1;
+		SDL_SemPost(backgroundEndSem);
 	}	
 	
 	return;
@@ -511,8 +529,9 @@ int windowBufferFill(void *arguments){
 	unsigned int currTile;
 	
 	while(1){
-		while(*beginFillingWindowBuffer==0){
-		}
+		//while(*beginFillingWindowBuffer == 0);
+		SDL_SemWait(windowStartSem);
+		//SDL_SemWait(windowSem);
 		*beginFillingWindowBuffer = 0;
 		*windowBufferComplete = 0;
 		
@@ -551,6 +570,7 @@ int windowBufferFill(void *arguments){
 		}
 		
 		*windowBufferComplete = 1;
+		SDL_SemPost(windowEndSem);
 	}
 	
 	return;
@@ -609,7 +629,9 @@ int spriteBufferFill(void *arguments){
 	}*/
 	
 	while(1){
-		while(*beginFillingSpriteBuffer == 0);
+		//while(*beginFillingSpriteBuffer == 0);
+		SDL_SemWait(spriteStartSem);
+		//SDL_SemWait(spriteSem);
 		*backSpriteBufferComplete = 0;
 		*frontSpriteBufferComplete = 0;
 		*beginFillingSpriteBuffer = 0;
@@ -775,6 +797,8 @@ int spriteBufferFill(void *arguments){
 		*backSpriteBufferComplete = 1;
 		*frontSpriteBufferComplete = 1;
 		*beginFillingSpriteBuffer = 0;
+
+		SDL_SemPost(spriteEndSem);
 	}
 	return;
 }			
@@ -835,7 +859,13 @@ int drawVideo(void* args){
 	spriteArgs[3] = backSpriteBuffer;
 	spriteArgs[4] = frontSpriteBuffer;
 	
+	spriteStartSem = SDL_CreateSemaphore(0);
+	windowStartSem = SDL_CreateSemaphore(0);
+	backgroundStartSem = SDL_CreateSemaphore(0);
 
+	spriteEndSem = SDL_CreateSemaphore(0);
+	windowEndSem = SDL_CreateSemaphore(0);
+	backgroundEndSem = SDL_CreateSemaphore(0);
 	
 	screenBitmap = SDL_CreateRGBSurface(SDL_SWSURFACE,160*WINDOW_SCALE,144*WINDOW_SCALE,32,0,0,0,0);
 	if(screenBitmap == NULL){
@@ -865,29 +895,47 @@ int drawVideo(void* args){
 	
 	printf("Finished creating Threads\n");
 	
+
+
+
+
 	drawingComplete=1;
 
 	while(1){
-		if(shouldFillBuffers == 1){
-			backSpriteBufferComplete = 1;
+		//if(shouldFillBuffers == 1){
+		printf("Waiting on fillBuffersSem\n");
+		SDL_SemWait(fillBuffersSem);
+		printf("Recieved fillBuffersSem\n");
+			/*backSpriteBufferComplete = 1;
 			frontSpriteBufferComplete = 1;
 			backgroundBufferComplete = 0;
 			windowBufferComplete = 1;
 			
 			beginFillingBackgroundBuffer = 1;
 			beginFillingWindowBuffer = 1;
-			beginFillingSpriteBuffer = 1;
+			beginFillingSpriteBuffer = 1;*/
+
+			SDL_SemPost(spriteStartSem);
+			SDL_SemPost(windowStartSem);
+			SDL_SemPost(backgroundStartSem);
+
+			SDL_SemWait(spriteEndSem);
+			SDL_SemWait(windowEndSem);
+			SDL_SemWait(backgroundEndSem);
 			
-			while(backSpriteBufferComplete==0);
+			/*while(backSpriteBufferComplete==0);
 			while(frontSpriteBufferComplete==0);
 			while(backgroundBufferComplete==0);
-			while(windowBufferComplete==0);
+			while(windowBufferComplete==0);*/
 			
 			buffersFull = 1;
 			shouldFillBuffers = 0;
 		
-		} else if(shouldRedraw == 1){
-			
+		//} else if(shouldRedraw == 1){
+		printf("Waiting on drawVideoStartSem\n");
+		SDL_SemWait(drawVideoStartSem);
+		printf("Recieved drawVideoStartSem\n");
+
 			if(SDL_LockSurface(display) == -1){
 				printf("Couldn't Lock display!!!\n");
 			}
@@ -941,8 +989,10 @@ int drawVideo(void* args){
 			
 			shouldRedraw = 0;
 			drawingComplete = 1;
+
+		//SDL_SemPost(drawVideoCompleteSem);
 			
-		}
+		
 	}
 }
 	

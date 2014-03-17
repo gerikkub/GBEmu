@@ -195,16 +195,16 @@ void initMem(int numMemBanks,int ramSize,char cartType){
 			break;
 	}
 	if(ramSize!=RAM_SIZE_0){
-		strcpy(ramBanks,"RAM BANKS!!!!");
+		//strcpy(ramBanks,"RAM BANKS!!!!");
 	}
-	workBanks = malloc(0x20000);
+	workBanks = malloc(0x8000);
 	if(workBanks==NULL){
 		printf("Couldn't allocate enought mem for workBank!!!\n");
 		exit(0);
 	}
-	memset(workBanks,0,0x20000);
+	memset(workBanks,0,0x8000);
 	
-	strcpy(workBanks,"WorkBanks Start\n");
+	//strcpy(workBanks,"WorkBanks Start\n");
 	
 	OAMTable = malloc(0xA0);	//OAM Table
 	if(OAMTable==NULL){
@@ -219,7 +219,7 @@ void initMem(int numMemBanks,int ramSize,char cartType){
 		exit(0);
 	}
 	
-	strcpy(IOPorts,"IOPorts Start\n");
+	//strcpy(IOPorts,"IOPorts Start\n");
 	
 	hram = malloc(0x7F);	//High RAM
 	if(hram==NULL){
@@ -228,7 +228,7 @@ void initMem(int numMemBanks,int ramSize,char cartType){
 	}
 	memset(hram,0,0x7F);
 	
-	strcpy(hram,"HRAM Start\n");
+	//strcpy(hram,"HRAM Start\n");
 	
 	//select membank function to use based off cartridge header
 	if(cartType == CART_TYPE_ROM||cartType == CART_TYPE_ROM_RAM||cartType == CART_TYPE_ROM_RAM_BAT){	//ROM only
@@ -281,7 +281,7 @@ void writeCharToMem(int loc,char value){
 	} else if(loc<0xD000){
 		workBanks[(loc-0xC000)] = value;
 	} else if(loc<0xE000){
-		workBanks[(loc-0xD000)+0x1000*currentWorkBank] = value;
+		workBanks[(loc-0xD000)+0x1000] = value;
 	} else if(loc<0xFE00){	//Same as 0xC000-0xDDFF
 		writeCharToMem(loc-0x2000,value);
 	} else if(loc<0xFEA0){	//OAM Table

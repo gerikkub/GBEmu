@@ -1,0 +1,21 @@
+Reading file: Tetris.gb
+romBanks: 0x0x7f8dfa223010
+ramSize: 0
+Loc: 26	to mem: 0x1c28b00
+Loc: 0	to mem: 0x1c289d0
+Loc: 4D	to mem: 0x1c28c38
+Loc: 56	to mem: 0x1c28c80
+Loc: 46	to mem: 0x1c28c00
+Loc: 41	to mem: 0x1c28bd8
+Loc: 4	to mem: 0x1c289f0
+Loc: 7	to mem: 0x1c28a08
+Leaving initIO
+Copied 0x8000 Bytes
+Successfully loaded ROM
+Video Thread Started!
+Starting to create threads
+Starting Gameboy Thread
+white: 1
+Alpha Value of transparent: AA000000
+Finished creating Threads
+Waiting on fillBuffersSem

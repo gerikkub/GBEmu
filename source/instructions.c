@@ -8,6 +8,103 @@
 #include "io.h"
 #include "joypad.h"
 
+#define INSTLDIMM(num,reg) \
+void instruction ## num (){ \
+	write ## reg (readCharFromMem(getPC()+1)); \
+	writePC(getPC()+2); \
+}
+
+#define INSTINC16(num,reg) \
+void instruction ## num (){ \
+	write ## reg (get ## reg() + 1); \
+	writePC(getPC()+1); \
+}
+
+#define INSTINC(num,reg) \
+void instruction ## num (){ \
+	unsigned char value = get ## reg () + 1; \
+	write ## reg (value); \
+	if(value == 0){ \
+		setFlagZ(); \
+	} else { \
+		clearFlagZ(); \
+	} \
+	if((value & 0xF) == 0){ \
+		setFlagH(); \
+	} else { \
+		clearFlagH(); \
+	} \
+	clearFlagN(); \
+	writePC(getPC()+1); \
+}
+
+#define INSTDEC(num,reg) \
+void instruction ## num (){ \
+	unsigned char value = get ## reg () - 1; \
+	write ## reg (value); \
+	if(value == 0){ \
+		setFlagZ(); \
+	} else { \
+		clearFlagZ(); \
+	} \
+	if((value&0xF) == 0xF){ \
+		setFlagH(); \
+	} else { \
+		clearFlagH(); \
+	} \
+	setFlagN(); \
+	writePC(getPC()+1); \
+}
+
+#define INSTDEC16(num,reg) \
+void instruction ## num (){ \
+	write ## reg (get ## reg() - 1); \
+	writePC(getPC()+1); \
+}
+
+#define INSTLDIMM16(num,reg) \
+void instruction ## num (){ \
+	write ## reg (readShortFromMem(getPC()+1)); \
+	writePC(getPC()+3); \
+}
+
+#define INSTLD(num,regdest,regsrc) \
+void instruction ## num (){ \
+	write ## regdest (get ## regsrc ()); \
+	writePC(getPC()+1); \
+}
+
+#define INSTLDFROMMEM(num,reg) \
+void instruction ## num (){ \
+	write ## reg (readCharFromMem(getHL())); \
+	writePC(getPC()+1); \
+}
+
+#define INSTLDTOMEM(num,reg) \
+void instruction ## num (){ \
+	writeCharToMem(getHL(),get ## reg ()); \
+	writePC(getPC()+1); \
+}
+
+//	printf("0b: %X\n",getBC()&0xFFF + originalState&0xFFF); \
+
+#define INSTADDREG16(num,reg) \
+void instruction ## num (){ \
+	unsigned short originalState = getHL(); \
+	writeHL(get ## reg () + getHL()); \
+	if((originalState&0xFFF)>(getHL()&0xFFF)){ \
+		setFlagH(); \
+	} else { \
+		clearFlagH(); \
+	} \
+	if((originalState&0xFFFF) > (getHL()&0xFFFF)){ \
+		setFlagC(); \
+	} else { \
+		clearFlagC(); \
+	} \
+	clearFlagN(); \
+	writePC(getPC()+1); \
+}
 
 #define INSTADD(num,reg) \
 void instruction ## num (){ \
@@ -369,6 +466,394 @@ void instructionCB ## num (){ \
 	writePC(getPC()+1); \
 }
 
+void instruction00(){
+	writePC(getPC()+1);	//NOP
+}
+
+void instruction10(){
+	return;	//STOP Should be handled in core.c
+}
+
+void instruction20(){
+	unsigned char offset;
+	if(getFlagZ() == 0){
+		offset = readCharFromMem(getPC()+1);
+		if(offset&0x80){
+			writePC(getPC() + (offset|0xFF00) + 2);
+		} else {
+			writePC(getPC() + offset + 2);
+		}
+	} else {
+		writePC(getPC() + 2);
+	}
+}
+
+void instruction30(){
+	unsigned char offset;
+	if(getFlagC() == 0){
+		offset = readCharFromMem(getPC()+1);
+		if(offset&0x80){
+			writePC(getPC() + (offset|0xFF00) + 2);
+		} else {
+			writePC(getPC() + offset + 2);
+		}
+	} else {
+		writePC(getPC() + 2);
+	}
+}
+
+INSTLDIMM16(01,BC)
+INSTLDIMM16(11,DE)
+INSTLDIMM16(21,HL)
+INSTLDIMM16(31,SP)
+
+void instruction02(){
+	writeCharToMem(getBC(),getA());
+	writePC(getPC()+1);
+}
+void instruction12(){
+	writeCharToMem(getDE(),getA());
+	writePC(getPC()+1);
+}
+void instruction22(){
+	writeCharToMem(getHL(),getA());
+	writeHL(getHL()+1);
+	writePC(getPC()+1);
+}
+void instruction32(){
+	writeCharToMem(getHL(),getA());
+	writeHL(getHL()-1);
+	writePC(getPC()+1);
+}
+
+INSTINC16(03,BC)
+INSTINC16(13,DE)
+INSTINC16(23,HL)
+INSTINC16(33,SP)
+
+INSTINC(04,B)
+INSTINC(0C,C)
+INSTINC(14,D)
+INSTINC(1C,E)
+INSTINC(24,H)
+INSTINC(2C,L)
+void instruction34(){
+	unsigned char value = readCharFromMem(getHL()) + 1;
+	writeCharToMem(getHL(),value);
+	if(value == 0){
+		setFlagZ();
+	} else {
+		clearFlagZ();
+	}
+	if((value&0xF) == 0){
+		setFlagH();
+	} else {
+		clearFlagH();
+	}
+	clearFlagN();
+	writePC(getPC()+1);
+}
+INSTINC(3C,A)
+
+INSTDEC(05,B)
+INSTDEC(0D,C)
+INSTDEC(15,D)
+INSTDEC(1D,E)
+INSTDEC(25,H)
+INSTDEC(2D,L)
+void instruction35(){
+	unsigned char value = readCharFromMem(getHL()) - 1;
+	writeCharToMem(getHL(),value);
+	if(value == 0){
+		setFlagZ();
+	} else {
+		clearFlagZ();
+	}
+	if((value&0xF) == 0xF){
+		setFlagH();
+	} else {
+		clearFlagH();
+	}
+	setFlagN();
+	writePC(getPC()+1);
+}
+INSTDEC(3D,A)
+
+INSTLDIMM(06,B)
+INSTLDIMM(0E,C)
+INSTLDIMM(16,D)
+INSTLDIMM(1E,E)
+INSTLDIMM(26,H)
+INSTLDIMM(2E,L)
+void instruction36(){
+	writeCharToMem(getHL(),readCharFromMem(getPC()+1));
+	writePC(getPC()+2);
+}
+INSTLDIMM(3E,A)
+
+void instruction07(){
+	//RLCA
+	if(getA()&0x80){
+		setFlagC();
+		writeA((getA()<<1)&0xFF | 1);
+	} else {
+		clearFlagC();
+		writeA((getA()<<1)&0xFE);
+	}
+	clearFlagZ();
+	clearFlagH();
+	clearFlagN();
+	writePC(getPC()+1);
+}
+
+void instruction17(){
+	//RLA
+	if(getA()&0x80){
+		writeA((getA()<<1)&0xFE | (getFlagC()&1));
+		setFlagC();
+	} else {
+		writeA((getA()<<1)&0xFE | (getFlagC()&1));
+		clearFlagC();
+	}
+	clearFlagH();
+	clearFlagN();
+	clearFlagZ();
+	writePC(getPC()+1);
+}
+
+void instruction27(){
+	//DAA
+	if((getA()&0xF)>9||getFlagH()==1){
+		if(getFlagN()==0){
+			writeA(getA() + 6);
+		} else {
+			writeA(getA() - 6);
+		}
+	}
+	if((getA()&0xF0)>0x9F||getFlagC()==1){
+		if(getFlagN()==0){
+			writeA(getA() + 0x60);
+		} else {
+			writeA(getA() - 0x60);
+		}
+		setFlagC();
+	} else {
+		clearFlagC();
+	}
+	if(getA() == 0){
+		setFlagZ();
+	} else {
+		clearFlagZ();
+	}
+	clearFlagH();
+	writePC(getPC()+1);
+}
+
+void instruction37(){
+	//SCF
+	clearFlagN();
+	clearFlagH();
+	setFlagC();
+	writePC(getPC()+1);
+}
+
+void instruction08(){
+	writeShortToMem(readShortFromMem(getPC()+1),getSP());
+	writePC(getPC()+3);
+}
+
+void instruction18(){
+	unsigned char offset;
+	offset = readCharFromMem(getPC()+1);
+	if(offset&0x80){
+		writePC(getPC() + (offset|0xFF00) + 2);
+	} else {
+		writePC(getPC() + offset + 2);
+	}
+}
+
+void instruction28(){
+	unsigned char offset;
+	if(getFlagZ() == 1){
+		offset = readCharFromMem(getPC()+1);
+		if(offset&0x80){
+			writePC(getPC() + (offset|0xFF00) + 2);
+		} else {
+			writePC(getPC() + offset + 2);
+		}
+	} else {
+		writePC(getPC() + 2);
+	}
+}
+
+void instruction38(){
+	unsigned char offset;
+	if(getFlagC() == 1){
+		offset = readCharFromMem(getPC()+1);
+		if(offset&0x80){
+			writePC(getPC() + (offset|0xFF00) + 2);
+		} else {
+			writePC(getPC() + offset + 2);
+		}
+	} else {
+		writePC(getPC() + 2);
+	}
+}
+
+INSTADDREG16(09,BC)
+INSTADDREG16(19,DE)
+INSTADDREG16(29,HL)
+INSTADDREG16(39,SP)
+
+void instruction0A(){
+	writeA(readCharFromMem(getBC()));
+	writePC(getPC()+1);
+}
+void instruction1A(){
+	writeA(readCharFromMem(getDE()));
+	writePC(getPC()+1);
+}
+void instruction2A(){
+	writeA(readCharFromMem(getHL()));
+	writeHL(getHL()+1);
+	writePC(getPC()+1);
+}
+void instruction3A(){
+	writeA(readCharFromMem(getHL()));
+	writeHL(getHL()-1);
+	writePC(getPC()+1);
+}
+
+INSTDEC16(0B,BC)
+INSTDEC16(1B,DE)
+INSTDEC16(2B,HL)
+INSTDEC16(3B,SP)
+
+void instruction0F(){
+	//RRCA
+	if(getA()&1){
+		writeA((getA()>>1)&0x7F | 0x80);
+		setFlagC();
+	} else {
+		writeA((getA()>>1)&0x7F);
+		clearFlagC();
+	}
+	clearFlagZ();
+	clearFlagH();
+	clearFlagN();
+	writePC(getPC()+1);
+}
+
+void instruction1F(){
+	//RRA
+	if(getA()&1){
+		writeA((getA()>>1)&0x7F|(getFlagC()&1)<<7);
+		setFlagC();
+	} else {
+		writeA((getA()>>1)&0x7F|(getFlagC()&1)<<7);
+		clearFlagC();
+	}
+	clearFlagZ();
+	clearFlagH();
+	clearFlagN();
+	writePC(getPC()+1);
+}
+
+void instruction2F(){
+	//CPL
+	writeA(getA()^0xFF);
+	setFlagH();
+	setFlagN();
+	writePC(getPC()+1);
+}
+
+void instruction3F(){
+	//CCF
+	if(getFlagC()==0){
+		setFlagC();
+	} else {
+		clearFlagC();
+	}
+	clearFlagH();
+	clearFlagN();
+	writePC(getPC()+1);
+}
+
+INSTLD(40,B,B)
+INSTLD(41,B,C)
+INSTLD(42,B,D)
+INSTLD(43,B,E)
+INSTLD(44,B,H)
+INSTLD(45,B,L)
+INSTLDFROMMEM(46,B)
+INSTLD(47,B,A)
+
+INSTLD(48,C,B)
+INSTLD(49,C,C)
+INSTLD(4A,C,D)
+INSTLD(4B,C,E)
+INSTLD(4C,C,H)
+INSTLD(4D,C,L)
+INSTLDFROMMEM(4E,C)
+INSTLD(4F,C,A)
+
+INSTLD(50,D,B)
+INSTLD(51,D,C)
+INSTLD(52,D,D)
+INSTLD(53,D,E)
+INSTLD(54,D,H)
+INSTLD(55,D,L)
+INSTLDFROMMEM(56,D)
+INSTLD(57,D,A)
+
+INSTLD(58,E,B)
+INSTLD(59,E,C)
+INSTLD(5A,E,D)
+INSTLD(5B,E,E)
+INSTLD(5C,E,H)
+INSTLD(5D,E,L)
+INSTLDFROMMEM(5E,E)
+INSTLD(5F,E,A)
+
+INSTLD(60,H,B)
+INSTLD(61,H,C)
+INSTLD(62,H,D)
+INSTLD(63,H,E)
+INSTLD(64,H,H)
+INSTLD(65,H,L)
+INSTLDFROMMEM(66,H)
+INSTLD(67,H,A)
+
+INSTLD(68,L,B)
+INSTLD(69,L,C)
+INSTLD(6A,L,D)
+INSTLD(6B,L,E)
+INSTLD(6C,L,H)
+INSTLD(6D,L,L)
+INSTLDFROMMEM(6E,L)
+INSTLD(6F,L,A)
+
+INSTLDTOMEM(70,B)
+INSTLDTOMEM(71,C)
+INSTLDTOMEM(72,D)
+INSTLDTOMEM(73,E)
+INSTLDTOMEM(74,H)
+INSTLDTOMEM(75,L)
+INSTLDTOMEM(77,A)
+
+void instruction76(){
+	//STOP SHOULD NEVER BE RUN
+	return;
+}
+
+INSTLD(78,A,B)
+INSTLD(79,A,C)
+INSTLD(7A,A,D)
+INSTLD(7B,A,E)
+INSTLD(7C,A,H)
+INSTLD(7D,A,L)
+INSTLDFROMMEM(7E,A)
+INSTLD(7F,A,A)
 
 INSTADD(80,B)
 INSTADD(81,C)
@@ -1108,10 +1593,10 @@ INSTCBRRC(0D,L)
 void instructionCB0E(){ 
 	if(readCharFromMem(getHL())&0x1==1){ 
 		setFlagC(); 
-		writeCharToMem(getHL(),(readCharFromMem(getHL()&0xFF)>>1)|0x80); 
+		writeCharToMem(getHL(),(readCharFromMem(getHL())>>1)&0x7F|0x80); 
 	} else { 
 		clearFlagC(); 
-		writeCharToMem(getHL(),(readCharFromMem(getHL())&0xFF)>>1); 
+		writeCharToMem(getHL(),(readCharFromMem(getHL())>>1)&0x7F); 
 	} 
 	if((readCharFromMem(getHL())&0xFF)==0){ 
 		setFlagZ(); 

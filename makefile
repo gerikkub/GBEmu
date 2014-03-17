@@ -59,6 +59,9 @@ pokemon:
 	
 mario:
 	main "Super Mario Land.gb" dump.bin reg.txt
+
+test:
+	main test.gb dump.bin reg.txt
 	
 runlinux:
 	./main tetris.gb dump.bin reg.txt

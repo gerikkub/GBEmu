@@ -131,6 +131,134 @@ int main(int argc,char** argv){
 	
 	
 	{ //Register Instructions Here
+	REGINST(00);
+	REGINST(01);
+	REGINST(02);
+	REGINST(03);
+	REGINST(04);
+	REGINST(05);
+	REGINST(06);
+	REGINST(07);
+	REGINST(08);
+	REGINST(09);
+	REGINST(0A);
+	REGINST(0B);
+	REGINST(0C);
+	REGINST(0D);
+	REGINST(0E);
+	REGINST(0F);
+	REGINST(10);
+	REGINST(11);
+	REGINST(12);
+	REGINST(13);
+	REGINST(14);
+	REGINST(15);
+	REGINST(16);
+	REGINST(17);
+	REGINST(18);
+	REGINST(19);
+	REGINST(1A);
+	REGINST(1B);
+	REGINST(1C);
+	REGINST(1D);
+	REGINST(1E);
+	REGINST(1F);
+	REGINST(20);
+	REGINST(21);
+	REGINST(22);
+	REGINST(23);
+	REGINST(24);
+	REGINST(25);
+	REGINST(26);
+	REGINST(27);
+	REGINST(28);
+	REGINST(29);
+	REGINST(2A);
+	REGINST(2B);
+	REGINST(2C);
+	REGINST(2D);
+	REGINST(2E);
+	REGINST(2F);
+	REGINST(30);
+	REGINST(31);
+	REGINST(32);
+	REGINST(33);
+	REGINST(34);
+	REGINST(35);
+	REGINST(36);
+	REGINST(37);
+	REGINST(38);
+	REGINST(39);
+	REGINST(3A);
+	REGINST(3B);
+	REGINST(3C);
+	REGINST(3D);
+	REGINST(3E);
+	REGINST(3F);
+	REGINST(40);
+	REGINST(41);
+	REGINST(42);
+	REGINST(43);
+	REGINST(44);
+	REGINST(45);
+	REGINST(46);
+	REGINST(47);
+	REGINST(48);
+	REGINST(49);
+	REGINST(4A);
+	REGINST(4B);
+	REGINST(4C);
+	REGINST(4D);
+	REGINST(4E);
+	REGINST(4F);
+	REGINST(50);
+	REGINST(51);
+	REGINST(52);
+	REGINST(53);
+	REGINST(54);
+	REGINST(55);
+	REGINST(56);
+	REGINST(57);
+	REGINST(58);
+	REGINST(59);
+	REGINST(5A);
+	REGINST(5B);
+	REGINST(5C);
+	REGINST(5D);
+	REGINST(5E);
+	REGINST(5F);
+	REGINST(60);
+	REGINST(61);
+	REGINST(62);
+	REGINST(63);
+	REGINST(64);
+	REGINST(65);
+	REGINST(66);
+	REGINST(67);
+	REGINST(68);
+	REGINST(69);
+	REGINST(6A);
+	REGINST(6B);
+	REGINST(6C);
+	REGINST(6D);
+	REGINST(6E);
+	REGINST(6F);
+	REGINST(70);
+	REGINST(71);
+	REGINST(72);
+	REGINST(73);
+	REGINST(74);
+	REGINST(75);
+	REGINST(76);
+	REGINST(77);
+	REGINST(78);
+	REGINST(79);
+	REGINST(7A);
+	REGINST(7B);
+	REGINST(7C);
+	REGINST(7D);
+	REGINST(7E);
+	REGINST(7F);
 	REGINST(80);
 	REGINST(81);
 	REGINST(82);
@@ -552,7 +680,7 @@ int main(int argc,char** argv){
 	//printf("scrollX init: 0x%p\n",scrollX);
 	//while(timerReady == 0);
 	
-	SDL_Thread *runGameboyThread = SDL_CreateThread(runGameboy,NULL);
+	SDL_Thread *runGameboyThread = SDL_CreateThread(runGameboy,argv);
 	if(runGameboyThread == NULL){
 		printf("Unable to create Gameboy Thread. Exiting!!!\n");
 	}
@@ -779,6 +907,9 @@ int runGameboyCycle(int screenRefreshCount){
 	//Everything neccesary for one cycle of gameboy
 	int returnValue;
 	returnValue = runCPUCycle();
+
+	
+	
 	
 	updateVideo(screenRefreshCount);
 
@@ -799,7 +930,10 @@ int runGameboy(void *args){
 	unsigned int cycles;
 	unsigned int currTime;
 	unsigned int prevTime = 0;
-	
+	char** argv = args;
+
+	writeA(0);
+
 	while(runGameboyCycle(screenRefreshCount)!=0x10){
 		screenRefreshCount++;
 		if(screenRefreshCount==70224){
@@ -812,6 +946,9 @@ int runGameboy(void *args){
 				SDL_Delay(((unsigned int)((1./(float)MAX_HZ)*70224.*1000000.) - (currTime-prevTime))/1000);
 			}
 			prevTime = currTime;
+
+			/** DEBUG **/
+			//printf("Debug Workbank: %X\n",workBanks[0x1E5C]);
 			
 		}
 	}
@@ -819,7 +956,11 @@ int runGameboy(void *args){
 	
 	printPCRecall(PCRecallHead,MAX_PC_RECALL_LENGTH);
 	
-	while(1);
+	dumpMemToFile(argv[2]);
+	dumpRegToFile(argv[3]);
+
+	SDL_Delay(3000);
+	exit(1);
 }
 
 int runGameboyWithCondition(int screenRefreshCount,int condition){
