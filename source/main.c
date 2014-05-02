@@ -1,4 +1,3 @@
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -62,7 +61,6 @@ int main(int argc,char** argv){
 	
 	void* registers = (void*)malloc(12*2);
 	char* cartHead = malloc(0x50);
-	char cmdChar;
 	
 	shouldDumpState = 0;
 	
@@ -100,12 +98,10 @@ int main(int argc,char** argv){
 	initMem(cartHead[0x48],cartHead[0x49],cartHead[0x47]);
 	initIO();
 	
-	int i=0;
-	
 	//printf("romMem: 0x%p  opcodes: 0x%p\n",romBanks,opcodes);
 
 	#if LINUX == 1
-		printf("Copied 0x%X Bytes\n",fread(romBanks,1,fileSize,romFile));
+		printf("Copied 0x%X Bytes\n",(unsigned int)fread(romBanks,1,fileSize,romFile));
 	
 	
 	#else
@@ -659,21 +655,10 @@ int main(int argc,char** argv){
 	clearFlagH();
 	clearFlagC();
 	
-	i=0;
-	
-	short thisPC;
-	
 	/*Redraw Screen every 70224 clicks
 	Mode 0 for 207 clicks then Mode 2 for 77 clicks the Mode 3 for 172 clicks
 	After 160 lines switch to Mode 1 for 4560 clicks
 	*/
-	
-	unsigned int sync = 0;
-	
-	int prevTime,currTime;
-	int count = 0;
-	int framesElapsed = 0;
-	double fps;
 	
 	//PCRecallTest();
 	
@@ -876,8 +861,6 @@ void dumpMemToFile(char* filename){
 	
 	//printf("tempPtr: 0x%p\n",tempPtr);
 	
-	int written;
-
 	memset(tempPtr,0,0x10000);
 	memcpy(&tempPtr[0],romBanks,0x4000);	//0x0-0x3FFF ROM BANK 00
 	memcpy(&tempPtr[0x4000],romBanks+0x4000*currentRomBank,0x4000);	//0x4000-0x7FFF ROM BANK 01..NN
@@ -907,9 +890,6 @@ int runGameboyCycle(int screenRefreshCount){
 	//Everything neccesary for one cycle of gameboy
 	int returnValue;
 	returnValue = runCPUCycle();
-
-	
-	
 	
 	updateVideo(screenRefreshCount);
 
@@ -927,7 +907,6 @@ int runGameboy(void *args){
 
 	printf("Starting Gameboy Thread\n");
 
-	unsigned int cycles;
 	unsigned int currTime;
 	unsigned int prevTime = 0;
 	char** argv = args;
@@ -989,7 +968,7 @@ int runGameboyWithCondition(int screenRefreshCount,int condition){
 			}
 		}
 	} else if(condition&RUN_COND_UPTO){
-		while(getPC()!=condition&0xFFFF){
+		while(getPC()!=(condition&0xFFFF)){
 			if(runGameboyCycle(screenRefreshCount)==0x10){
 				return 0x10;
 			}
@@ -1006,6 +985,7 @@ int runGameboyWithCondition(int screenRefreshCount,int condition){
 			screenRefreshCount = 0;
 		}
 	}
+	return 0;
 }
 	
 //void runGameboyWithDebug(){
@@ -1148,8 +1128,9 @@ void PCRecallTest(){
 	
 	int i;
 	PCRecall** first;
-	PCRecall* curr,next;
+	PCRecall* curr;
 	
+	first = (PCRecall**)malloc(sizeof(PCRecall *));
 	*first = (PCRecall*)malloc(sizeof(PCRecall));
 	curr = *first;
 	curr->pc = 0;

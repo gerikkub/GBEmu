@@ -86,12 +86,14 @@ void joypadUpdate(){
 			case SDLK_TAB:
 				shouldDumpState= 1;
 				break;
+			default:
+				break;
 		}
 		//Write Joypad Data
 		if(currentButtonSelect == BUTTON_SELECT_BUTTON){
-			*joypadRead = buttonMatrix&0xF;
+			setjoypadRead(buttonMatrix&0xF);
 		} else {
-			*joypadRead = (buttonMatrix>>4)&0xF;
+			setjoypadRead((buttonMatrix>>4)&0xF);
 		}
 		break;
 	case SDL_KEYUP:
@@ -120,18 +122,22 @@ void joypadUpdate(){
 			case GAMEBOY_BTTN_DOWN:
 				buttonMatrix |= BIT(7);
 				break;
+			default:
+				break;
 			
 		}
 		//Write Joypad Data
 		if(currentButtonSelect == BUTTON_SELECT_BUTTON){
-			*joypadRead = buttonMatrix&0xF;
+			setjoypadRead(buttonMatrix&0xF);
 		} else {
-			*joypadRead = (buttonMatrix>>4)&0xF;
+			setjoypadRead((buttonMatrix>>4)&0xF);
 		}
 		break;
 	case SDL_QUIT:
 		outputInstructionCount();
 		exit(0);
+		break;
+	default:
 		break;
 	}
 	

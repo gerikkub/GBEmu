@@ -1,4 +1,3 @@
-
 #include <stdio.h>
 
 #include "main.h"
@@ -85,8 +84,6 @@ void instruction ## num (){ \
 	writeCharToMem(getHL(),get ## reg ()); \
 	writePC(getPC()+1); \
 }
-
-//	printf("0b: %X\n",getBC()&0xFFF + originalState&0xFFF); \
 
 #define INSTADDREG16(num,reg) \
 void instruction ## num (){ \
@@ -295,7 +292,7 @@ void instructionCB ## num (){ \
 
 #define INSTCBRRC(num,reg) \
 void instructionCB ## num (){ \
-	if(get ## reg()&0x1==1){ \
+	if((get ## reg()&0x1)==1){ \
 		setFlagC(); \
 		write ## reg (((get ## reg()&0xFF)>>1)|0x80); \
 	} else { \
@@ -595,7 +592,7 @@ void instruction07(){
 	//RLCA
 	if(getA()&0x80){
 		setFlagC();
-		writeA((getA()<<1)&0xFF | 1);
+		writeA(((getA()<<1)&0xFF) | 1);
 	} else {
 		clearFlagC();
 		writeA((getA()<<1)&0xFE);
@@ -609,10 +606,10 @@ void instruction07(){
 void instruction17(){
 	//RLA
 	if(getA()&0x80){
-		writeA((getA()<<1)&0xFE | (getFlagC()&1));
+		writeA(((getA()<<1)&0xFE) | (getFlagC()&1));
 		setFlagC();
 	} else {
-		writeA((getA()<<1)&0xFE | (getFlagC()&1));
+		writeA(((getA()<<1)&0xFE) | (getFlagC()&1));
 		clearFlagC();
 	}
 	clearFlagH();
@@ -732,7 +729,7 @@ INSTDEC16(3B,SP)
 void instruction0F(){
 	//RRCA
 	if(getA()&1){
-		writeA((getA()>>1)&0x7F | 0x80);
+		writeA(((getA()>>1)&0x7F) | 0x80);
 		setFlagC();
 	} else {
 		writeA((getA()>>1)&0x7F);
@@ -747,10 +744,10 @@ void instruction0F(){
 void instruction1F(){
 	//RRA
 	if(getA()&1){
-		writeA((getA()>>1)&0x7F|(getFlagC()&1)<<7);
+		writeA(((getA()>>1)&0x7F)|(getFlagC()&1)<<7);
 		setFlagC();
 	} else {
-		writeA((getA()>>1)&0x7F|(getFlagC()&1)<<7);
+		writeA(((getA()>>1)&0x7F)|(getFlagC()&1)<<7);
 		clearFlagC();
 	}
 	clearFlagZ();
@@ -1591,9 +1588,9 @@ INSTCBRRC(0B,E)
 INSTCBRRC(0C,H)
 INSTCBRRC(0D,L)
 void instructionCB0E(){ 
-	if(readCharFromMem(getHL())&0x1==1){ 
+	if((readCharFromMem(getHL())&0x1)==1){ 
 		setFlagC(); 
-		writeCharToMem(getHL(),(readCharFromMem(getHL())>>1)&0x7F|0x80); 
+		writeCharToMem(getHL(),((readCharFromMem(getHL())>>1)&0x7F)|0x80); 
 	} else { 
 		clearFlagC(); 
 		writeCharToMem(getHL(),(readCharFromMem(getHL())>>1)&0x7F); 

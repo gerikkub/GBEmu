@@ -1,21 +1,81 @@
-Reading file: Tetris.gb
-romBanks: 0x0x7f8dfa223010
+Reading file: tennis.gb
+Malloc called on line 135 in file source/mem.c
+romBanks: 0x0x7fa96ad6c010
+Malloc called on line 159 in file source/mem.c
 ramSize: 0
-Loc: 26	to mem: 0x1c28b00
-Loc: 0	to mem: 0x1c289d0
-Loc: 4D	to mem: 0x1c28c38
-Loc: 56	to mem: 0x1c28c80
-Loc: 46	to mem: 0x1c28c00
-Loc: 41	to mem: 0x1c28bd8
-Loc: 4	to mem: 0x1c289f0
-Loc: 7	to mem: 0x1c28a08
+Malloc called on line 199 in file source/mem.c
+Malloc called on line 208 in file source/mem.c
+Malloc called on line 215 in file source/mem.c
+Malloc called on line 223 in file source/mem.c
+Calloc called on line 218 in file source/io.c
+Calloc called on line 223 in file source/io.c
+Calloc called on line 229 in file source/io.c
+Loc: 26	to mem: 0x17b6c70
+Loc: 0	to mem: 0x17b6b40
+Loc: 4D	to mem: 0x17b6da8
+Loc: 56	to mem: 0x17b6df0
+Loc: 46	to mem: 0x17b6d70
+Loc: 41	to mem: 0x17b6d48
+Loc: 4	to mem: 0x17b6b60
+Loc: 7	to mem: 0x17b6b78
 Leaving initIO
 Copied 0x8000 Bytes
 Successfully loaded ROM
+Malloc called on line 641 in file source/main.c
+Malloc called on line 1156 in file source/main.c
 Video Thread Started!
 Starting to create threads
 Starting Gameboy Thread
 white: 1
 Alpha Value of transparent: AA000000
+Malloc called on line 636 in file source/video.c
+Malloc called on line 640 in file source/video.c
+Malloc called on line 640 in file source/video.c
+Malloc called on line 640 in file source/video.c
+Malloc called on line 640 in file source/video.c
+Malloc called on line 640 in file source/video.c
+Malloc called on line 640 in file source/video.c
+Malloc called on line 640 in file source/video.c
+Malloc called on line 640 in file source/video.c
+Malloc called on line 640 in file source/video.c
+Malloc called on line 640 in file source/video.c
+Malloc called on line 640 in file source/video.c
+Malloc called on line 640 in file source/video.c
+Malloc called on line 640 in file source/video.c
+Malloc called on line 640 in file source/video.c
 Finished creating Threads
-Waiting on fillBuffersSem
+Malloc called on line 640 in file source/video.c
+Malloc called on line 640 in file source/video.c
+Malloc called on line 640 in file source/video.c
+Malloc called on line 640 in file source/video.c
+Malloc called on line 640 in file source/video.c
+Malloc called on line 640 in file source/video.c
+Malloc called on line 640 in file source/video.c
+Malloc called on line 640 in file source/video.c
+Malloc called on line 640 in file source/video.c
+Malloc called on line 640 in file source/video.c
+Malloc called on line 640 in file source/video.c
+Malloc called on line 640 in file source/video.c
+Malloc called on line 640 in file source/video.c
+Malloc called on line 640 in file source/video.c
+Malloc called on line 640 in file source/video.c
+Malloc called on line 640 in file source/video.c
+Malloc called on line 640 in file source/video.c
+Malloc called on line 640 in file source/video.c
+Malloc called on line 640 in file source/video.c
+Malloc called on line 640 in file source/video.c
+Malloc called on line 640 in file source/video.c
+Malloc called on line 640 in file source/video.c
+Malloc called on line 640 in file source/video.c
+Malloc called on line 640 in file source/video.c
+Malloc called on line 640 in file source/video.c
+fps: 51.768766
+fps: 57.416268
+fps: 57.361377
+fps: 57.361377
+fps: 57.361377
+fps: 57.416268
+fps: 57.416268
+fps: 57.361377
+fps: 57.416268
+fps: 57.416268

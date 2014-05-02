@@ -1,4 +1,3 @@
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -7,6 +6,7 @@
 #include <SDL/SDL.h>
 
 #include "main.h"
+#include "core.h"
 #include "instructions.h"
 #include "mem.h"
 #include "video.h"
@@ -14,13 +14,6 @@
 #include "dma.h"
 #include "joypad.h"
 #include "instruction_count.h"
-
-#define INT_VBLANK	1
-#define INT_LCD		2
-#define INT_TIMER	4
-#define INT_SERIAL	8
-#define INT_JOYPAD	16
-
 
 #define MAX_MEM	0xFFFF
 
@@ -32,146 +25,154 @@ int delayCyclesLeft=0;
 
 opcodeInstruction* opcodes;
 
+void setInterrupt(char a){
+	setinterruptFlags(getinterruptFlags() | a);
+}
+
+void clearInterrupt(char a){
+	setinterruptFlags(getinterruptFlags() & ~a);
+}
+
 //Probably would have better to use a struct with unions. Change later
-inline void writeAF(short value){
+void writeAF(short value){
 	short* reg = (short*)(registerList);
 	*reg = value;
 }
-inline void writeBC(short value){
+void writeBC(short value){
 	short* reg = (short*)(registerList+2);
 	*reg = value;
 }
-inline void writeDE(short value){
+void writeDE(short value){
 	short* reg = (short*)(registerList+4);
 	*reg = value;
 }
-inline void writeHL(short value){
+void writeHL(short value){
 	short* reg = (short*)(registerList+6);
 	*reg = value;
 }
-inline void writeSP(short value){
+void writeSP(short value){
 	short* reg = (short*)(registerList+8);
 	*reg = value;
 }
-inline void writePC(short value){
+void writePC(short value){
 	short* reg = (short*)registerList;
 	reg[5] = value;
 }
 
 //Big Endian :(
-inline void writeA(char value){
+void writeA(char value){
 	char* reg = (char*)(registerList+1);
 	*reg = value;
 }
-inline void writeF(char value){
+void writeF(char value){
 	char* reg = (char*)(registerList);
 	*reg = value;
 }
-inline void writeB(char value){
+void writeB(char value){
 	char* reg = (char*)(registerList+3);
 	*reg = value&0xFF;
 }
-inline void writeC(char value){
+void writeC(char value){
 	char* reg = (char*)(registerList+2);
 	*reg = value;
 }
-inline void writeD(char value){
+void writeD(char value){
 	char* reg = (char*)(registerList+5);
 	*reg = value;
 }
-inline void writeE(char value){
+void writeE(char value){
 	char* reg = (char*)(registerList+4);
 	*reg = value;
 }
-inline void writeH(char value){
+void writeH(char value){
 	char* reg = (char*)(registerList+7);
 	*reg = value;
 }
-inline void writeL(char value){
+void writeL(char value){
 	char* reg = (char*)(registerList+6);
 	*reg = value;
 }
 
-inline unsigned short getAF(){
+unsigned short getAF(){
 	return *((short *)registerList);
 }
-inline unsigned short getBC(){
+unsigned short getBC(){
 	return *((short *)(registerList+2));
 }
-inline unsigned short getDE(){
+unsigned short getDE(){
 	return *((short *)(registerList+4));
 }
-inline unsigned short getHL(){
+unsigned short getHL(){
 	return *((short *)(registerList+6));
 }
-inline unsigned short getSP(){
+unsigned short getSP(){
 	return *((short *)(registerList+8));
 }
-inline unsigned short getPC(){
+unsigned short getPC(){
 	return *((short *)(registerList+10));
 }
 
-inline unsigned char getA(){
+unsigned char getA(){
 	return *((char*)registerList+1)&0xFF;
 }
-inline unsigned char getF(){
+unsigned char getF(){
 	return *((char*)(registerList))&0xFF;
 }
-inline unsigned char getB(){
+unsigned char getB(){
 	return *((char*)(registerList+3))&0xFF;
 }
-inline unsigned char getC(){
+unsigned char getC(){
 	return *((char*)(registerList+2))&0xFF;
 }
-inline unsigned char getD(){
+unsigned char getD(){
 	return *((char*)(registerList+5))&0xFF;
 }
-inline unsigned char getE(){
+unsigned char getE(){
 	return *((char*)(registerList+4))&0xFF;
 }
-inline unsigned char getH(){
+unsigned char getH(){
 	return *((char*)(registerList+7))&0xFF;
 }
-inline unsigned char getL(){
+unsigned char getL(){
 	return *((char*)(registerList+6))&0xFF;
 }
 
-inline void setFlagZ(){
+void setFlagZ(){
 	writeF(getF()|0x80);
 }
-inline void setFlagN(){
+void setFlagN(){
 	writeF(getF()|0x40);
 }
-inline void setFlagH(){
+void setFlagH(){
 	writeF(getF()|0x20);
 }
-inline void setFlagC(){
+void setFlagC(){
 	writeF(getF()|0x10);
 }
 
-inline void clearFlagZ(){
+void clearFlagZ(){
 	writeF(getF()&(~(0x80)));
 }
-inline void clearFlagN(){
+void clearFlagN(){
 	writeF(getF()&(~(0x40)));
 }
-inline void clearFlagH(){
+void clearFlagH(){
 	writeF(getF()&(~(0x20)));
 }
-inline void clearFlagC(){
+void clearFlagC(){
 	writeF(getF()&(~(0x10)));
 }
 
-inline int getFlagZ(){
+int getFlagZ(){
 	return (getF()&0x80)>>7;
 }
-inline int getFlagN(){
+int getFlagN(){
 	return (getF()&0x40)>>6;
 }
-inline int getFlagH(){
+int getFlagH(){
 	return (getF()&0x20)>>5;
 }
-inline int getFlagC(){
+int getFlagC(){
 	return (getF()&0x10)>>4;
 }
 
@@ -224,10 +225,6 @@ int runCPUCycle(){
 
 	
 	//Both used in DAA
-	char correction;
-	char beforeA;
-	unsigned short beforeHL;
-	char temp;
 	opcodeInstruction instruction;	
 	unsigned char currentInterrupts;
 	
@@ -238,37 +235,37 @@ int runCPUCycle(){
 	
 	//Check for Interrupts
 	if(IME == 1){
-		currentInterrupts = (*interruptFlags)&interruptER;
+		currentInterrupts = getinterruptFlags()&interruptER;
 		if(currentInterrupts&INT_VBLANK){
 			writeSP(getSP()-2);
 			writeShortToMem(getSP(),getPC());
 			writePC(0x40);
 			IME = 0;
-			*interruptFlags = (*interruptFlags)& ~(INT_VBLANK);
+			clearInterrupt(INT_VBLANK);
 		} else if(currentInterrupts&INT_LCD){
 			writeSP(getSP()-2);
 			writeShortToMem(getSP(),getPC());
 			writePC(0x48);
 			IME = 0;
-			*interruptFlags = (*interruptFlags)& ~(INT_LCD);
+			clearInterrupt(INT_LCD);
 		} else if(currentInterrupts&INT_TIMER){
 			writeSP(getSP()-2);
 			writeShortToMem(getSP(),getPC());
 			writePC(0x50);
 			IME = 0;
-			*interruptFlags = (*interruptFlags)& ~(INT_TIMER);
+			clearInterrupt(INT_TIMER);
 		} else if(currentInterrupts&INT_SERIAL){
 			writeSP(getSP()-2);
 			writeShortToMem(getSP(),getPC());
 			writePC(0x58);
 			IME = 0;
-			*interruptFlags = (*interruptFlags)& ~(INT_SERIAL);
+			clearInterrupt(INT_SERIAL);
 		} else if(currentInterrupts&INT_JOYPAD){
 			writeSP(getSP()-2);
 			writeShortToMem(getSP(),getPC());
 			writePC(0x60);
 			IME = 0;
-			*interruptFlags = (*interruptFlags)& ~(INT_JOYPAD);
+			clearInterrupt(INT_JOYPAD);
 		}
 	}	
 	

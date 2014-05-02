@@ -1,10 +1,26 @@
 #ifndef __MAIN_H__
 #define __MAIN_H__
 
+#include <assert.h>
+
+#include <stdlib.h>
+
+static void* malloc_line(int x,int line,char* file){
+	printf("Malloc called on line %d in file %s\n",line,file);
+	return malloc(x);
+}
+
+static void* calloc_line(int x,int y,int line,char* file){
+	printf("Calloc called on line %d in file %s\n",line,file);
+	return calloc(x,y);
+}
+
+#define malloc(x) malloc_line(x,__LINE__,__FILE__)
+
+#define calloc(x,y) calloc_line(x,y,__LINE__,__FILE__)
+
 #define W_PRINTF	0
 #define DEBUG_INSTRUCTIONS 0
-
-
 
 #define LINUX	1
 #define SIZE_OF_INSTRUCTION	8
