@@ -31,51 +31,53 @@
 * This timer is synced with the core speed *
 \******************************************/
 
-int runTimer(){
+void runTimer(){
 	
-	int static dividerFraction = 0;
-	int static timerFraction = 0;
+	static int dividerFraction = 0;
+	static int timerFraction = 0;
 	
 	
 	dividerFraction++;
 	if(dividerFraction == 256){
-		(*divRegister) += 1;
+		setdivRegister(getdivRegister() + 1);
 		dividerFraction = 0;
 	}
 	
 	
-	if((*timerControl)&TIMA_START){
+	if(gettimerControl()&TIMA_START){
 		timerFraction++;
 	
-		switch((*timerControl)&0x3){
+		switch(gettimerControl()&0x3){
 			case 0:
 				if(timerFraction == FRACTION_COUNT_NEEDED(TIMA_SELECT_0)){
-					*timerCounter += 1;
+					settimerCounter(gettimerCounter() + 1);
 					timerFraction = 0;
 				}
 				break;
 			case 1:
 				if(timerFraction == FRACTION_COUNT_NEEDED(TIMA_SELECT_1)){
-					*timerCounter += 1;
+					settimerCounter(gettimerCounter() + 1);
 					timerFraction = 0;
 				}
 				break;
 			case 2:
 				if(timerFraction == FRACTION_COUNT_NEEDED(TIMA_SELECT_2)){
-					*timerCounter += 1;
+					settimerCounter(gettimerCounter() + 1);
 					timerFraction = 0;
 				}
 				break;
 			case 3:
 				if(timerFraction == FRACTION_COUNT_NEEDED(TIMA_SELECT_3)){
-					*timerCounter += 1;
+					settimerCounter(gettimerCounter() + 1);
 					timerFraction = 0;
 				}
 				break;
+			default:
+				assert(0);
 		}
-		if((*timerCounter) == 0){
-			*timerCounter = (*timerModulo);
-			(*interruptFlags) |= BIT(2);
+		if(gettimerCounter() == 0){
+			settimerCounter(gettimerModulo());
+			setInterrupt(INT_TIMER);
 		}
 	
 	}

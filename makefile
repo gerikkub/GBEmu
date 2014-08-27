@@ -2,7 +2,9 @@ BUILDPREFIX := build/
 SOURCEPREFIX := source/
 
 TARGET := main.exe
-CFLAGS := -g
+CFLAGS := -g -fvisibility=hidden -Wpointer-arith -Winit-self\
+ -Wformat-nonliteral -Werror -W -Wall -Wno-unused-parameter -Ofast\
+ -Wno-unused-function
 LINUX := 1
 OBJECTS := $(BUILDPREFIX)instruction_count.o $(BUILDPREFIX)timer.o $(BUILDPREFIX)joypad.o $(BUILDPREFIX)dma.o $(BUILDPREFIX)video.o $(BUILDPREFIX)mem.o $(BUILDPREFIX)core.o $(BUILDPREFIX)instructions.o \
 		$(BUILDPREFIX)io.o $(BUILDPREFIX)main.o
@@ -29,27 +31,11 @@ $(BUILDPREFIX)%.o: $(SOURCEPREFIX)%.c
 linux: $(OBJECTS)
 	gcc -o main $(OBJECTS) -lSDL
 
-buildDebugLinux:	
-	CFLAGS := $(CFLAGS) -g
-	
-	gcc -c -g main.c -o $(BUILDPREFIX)main.o
-	gcc -c -g instructions.c -o $(BUILDPREFIX)instructions.o
-	gcc -c -g core.c -o $(BUILDPREFIX)core.o
-	gcc -c -g mem.c -o $(BUILDPREFIX)mem.o
-	gcc -c -g io.c -o $(BUILDPREFIX)io.o
-	gcc -c -g video.c -o $(BUILDPREFIX)video.o
-	gcc -c -g dma.c -o $(BUILDPREFIX)dma.o
-	gcc -c -g joypad.c -o $(BUILDPREFIX)joypad.o	 $(CFLAGS)	
-	gcc -c -g timer.c -o $(BUILDPREFIX)timer.o	 $(CFLAGS)		
-	
-	gcc -o main $(BUILD) -lallegro
-	
-	
 tetris:
-	main tetris.gb dump.bin reg.txt
+	./main tetris.gb dump.bin reg.txt
 	
 tennis:
-	main tennis.gb dump.bin reg.txt
+	./main tennis.gb dump.bin reg.txt
 	
 kirby:
 	main.exe "Kirby's Dream Land.gb" dump.bin reg.txt

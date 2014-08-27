@@ -1,4 +1,3 @@
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -78,7 +77,7 @@ void memBankMBC1(int loc,char value){
 		RAMEnabled = value;
 	} else if(loc<0x4000){
 		//printf("Changing rom bank\n");
-		if(value&0x1F==0){
+		if((value&0x1F)==0){
 			value++;
 		}
 		currentRomBank = (currentRomBank&0xE0)|(value&0x1F);
@@ -104,11 +103,11 @@ void memBankMBC1(int loc,char value){
 void memBankMBC2(int loc,char value){
 
 	if(loc<0x2000){
-		if(value&0x10==0){
+		if((value&0x10)==0){
 			//Not sure what to do here
 		}
 	} else if(loc<0x4000){
-		if(value&0x10==0){
+		if((value&0x10)==0){
 			currentRomBank = value&0x0F;
 		}
 	}	
@@ -120,7 +119,7 @@ void memBankMBC3(int loc,char value){
 		//Supposed to switch between RAM and Timer, will program later
 	} else if(loc<0x4000){
 		currentRomBank = value&0x7F;
-		if(value=0) currentRomBank=0;
+		if(value==0) currentRomBank=0;
 	} else if(loc<0x6000){
 		if(value<=3){
 			currentRamBank = value;

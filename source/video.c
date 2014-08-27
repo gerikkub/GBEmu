@@ -1,4 +1,3 @@
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
@@ -36,6 +35,21 @@
 #define	LCD_MODE2	2
 #define LCD_MODE3	3
 
+#define LCD_STATUS_LYC_LY_INT			BIT(6)
+#define LCD_STATUS_OAM_INT				BIT(5)
+#define LCD_STATUS_V_BLANK_INT			BIT(4)
+#define LCD_STATUS_H_BLANK_INT			BIT(3)
+#define LCD_STATUS_LYC_LC_FLAG			BIT(2)
+#define LCD_STATUS_MODE3				LCD_MODE3
+#define	LCD_STATUS_MODE2				LCD_MODE2
+#define LCD_STATUS_MODE1				LCD_MODE1 
+#define LCD_STATUS_MODE0				LCD_MODE0
+
+#define LCD_MODE0	0
+#define LCD_MODE1	1
+#define	LCD_MODE2	2
+#define LCD_MODE3	3
+
 //From white to black
 #define LCD_COLOR0	0
 #define LCD_COLOR1	1
@@ -55,6 +69,10 @@
 
 #define TILES_PER_ROW		20
 #define TILES_PER_COLUMN	18
+
+#define MODE_0_THRESHOLD	249
+#define MODE_2_THRESHOLD	0
+#define MODE_3_THRESHOLD	77
 
 
 int shouldFillBuffers = 0;	//Will be set to 1 when screen buffers should be filled
@@ -198,7 +216,7 @@ void spriteListSort(SpriteList** first,SpriteList* last){
 	spriteListSort(&pivot->next,last);
 }	
 	
-char getColorForTile(tileData* tile,int row, int column){
+unsigned char getColorForTile(tileData* tile,int row, int column){
 	tileLine readLine = tile->lines[row];
 	char upperBit = readLine.highBits >> (7-column);
 	upperBit = upperBit&1;
@@ -212,54 +230,55 @@ void updateVideo(int screenRefreshCount){
 	
 	int temp;
 	
-	fillBuffersSem = SDL_CreateSemaphore(0);
-	drawVideoStartSem = SDL_CreateSemaphore(0);
-	drawVideoCompleteSem = SDL_CreateSemaphore(1);
-
+	
 	if(screenRefreshCount<65664){	//Not in V-Blank
 	
 		if(screenRefreshCount == 0){
 			//while(drawingComplete == 0);
 			//SDL_SemWait(drawVideoCompleteSem);
 			drawingComplete = 0;
-			(*LY) = 0;
-			*LCDStatus=((*LCDStatus)&0xFC)|LCD_MODE2;			
-			//shouldFillBuffers=1;
-			SDL_SemPost(fillBuffersSem);
+			setLY(0);
+			setLCDStatus((getLCDStatus()&0xFC)|LCD_MODE2);			
+			shouldFillBuffers=1;
+			//SDL_SemPost(fillBuffersSem);
 			
 			//If Mode 2 interrupt enabled
-			if(((*LCDStatus)&0x20)!=0){
-				(*interruptFlags) = (*interruptFlags)|0x2;	//Set LCD STAT Interrupt
+			if((getLCDStatus()&LCD_STATUS_OAM_INT)!=0){
+				setInterrupt(INT_LCD);			//Set LCD STAT Interrupt
 			}
-			if(*LY==*LYC){
-				*LCDStatus = ((*LCDStatus)&0xFB)|0x4;	//Set Coincidence Flag
-				(*interruptFlags) = (*interruptFlags)|0x2;	//Set LCD STAT Interrupt Request
+			if(getLY()==getLYC()){
+				setLCDStatus(getLCDStatus()|LCD_STATUS_LYC_LC_FLAG);	//Set Coincidence Flag
+				if(getLCDStatus()&LCD_STATUS_LYC_LY_INT){
+					setInterrupt(INT_LCD);				//Set LCD STAT Interrupt Request
+				}
 			} else {
-				*LCDStatus = (*LCDStatus)&0xFB;	//Otherwise clear it
+				setLCDStatus(getLCDStatus(~LCD_STATUS_LYC_LC_FLAG));	//Otherwise clear it
 			}	
 		} else {
 			temp = screenRefreshCount%456;
-			if(temp==0){	//Switch To Mode 2
-				*LCDStatus=((*LCDStatus)&0xFC)|LCD_MODE2;
-				*LY =(*LY)+1;				
+			if(temp==MODE_2_THRESHOLD){	//Switch To Mode 2
+				setLCDStatus((getLCDStatus()&0xFC)|LCD_MODE2);
+				setLY(getLY()+1);				
 				
 				//If Mode 2 interrupt enabled
-				if(((*LCDStatus)&0x20)!=0){
-					(*interruptFlags) = (*interruptFlags)|0x2;	//Set LCD STAT Interrupt
+				if((getLCDStatus()&LCD_STATUS_OAM_INT)!=0){
+					setInterrupt(INT_LCD);		//Set LCD STAT Interrupt
 				}
 				
-				if(*LY==*LYC){	//If LY and LYC are equal
-					*LCDStatus = ((*LCDStatus)&0xFB)|0x4;	//Set Coincidence Flag
-					(*interruptFlags) = (*interruptFlags)|0x2;	//Set LCD STAT Interrupt Request
+				if(getLY()==getLYC()){	//If LY and LYC are equal
+					setLCDStatus(getLCDStatus()|LCD_STATUS_LYC_LC_FLAG);	//Set Coincidence Flag
+					if(getLCDStatus()&LCD_STATUS_LYC_LY_INT){
+						setInterrupt(INT_LCD);				//Set LCD STAT Interrupt Request
+					}
 				} else {
-					*LCDStatus = (*LCDStatus)&0xFB;	//Otherwise clear it
+					setLCDStatus(getLCDStatus()& ~LCD_STATUS_LYC_LC_FLAG);	//Otherwise clear it
 				}	
-			} else if(temp==77){
-				*LCDStatus=((*LCDStatus)&0xFC)|LCD_MODE3;
-			} else if(temp==249){
-				*LCDStatus=((*LCDStatus)&0xFC)|LCD_MODE0;
-				if(((*LCDStatus)&0x4)!=0){	//If Mode 0 flag set
-					(*interruptFlags) = (*interruptFlags)|0x2;	//Set LCD STAT Interrupt
+			} else if(temp==MODE_3_THRESHOLD){
+				setLCDStatus((getLCDStatus()&0xFC)|LCD_MODE3);
+			} else if(temp==MODE_0_THRESHOLD){
+				setLCDStatus((getLCDStatus()&0xFC)|LCD_MODE0);
+				if((getLCDStatus()&LCD_STATUS_H_BLANK_INT)){	//If Mode 0 flag set
+					setInterrupt(INT_LCD);	//Set LCD STAT Interrupt
 				}	
 			}
 		}	
@@ -268,29 +287,31 @@ void updateVideo(int screenRefreshCount){
 	
 		buffersFull = 0;
 		shouldRedraw = 1;
-		SDL_SemPost(drawVideoStartSem);
-		*LCDStatus=((*LCDStatus)&0xFC)|LCD_MODE1;
-		*LY = (*LY) + 1;
+		//SDL_SemPost(drawVideoStartSem);
+		setLCDStatus((getLCDStatus()&0xFC)|LCD_STATUS_MODE1);
+		setLY(getLY() + 1);
 		
-		if(((*LCDStatus)&0x8)!=0){
-			(*interruptFlags) = (*interruptFlags)|0x2;	//Set LCD STAT Interrupt
+		if(getLCDStatus()&LCD_STATUS_V_BLANK_INT){
+			setInterrupt(INT_VBLANK);	
 		}	
 		
-		(*interruptFlags) = (*interruptFlags)|0x1;	//Set V-Blank Interrupt
-		
-		if(*LY==*LYC){	//If LY and LYC are equal
-			*LCDStatus = ((*LCDStatus)&0xFB)|0x4;	//Set Coincidence Flag
-			(*interruptFlags) = (*interruptFlags)|0x2;	//Set LCD STAT Interrupt Request
+		if(getLY()==getLYC()){	//If LY and LYC are equal
+			setLCDStatus(getLCDStatus()|LCD_STATUS_LYC_LC_FLAG);	//Set Coincidence Flag
+			if(getLCDStatus()&LCD_STATUS_LYC_LC_FLAG){
+				setInterrupt(INT_LCD);
+			}
 		} else {
-			*LCDStatus = (*LCDStatus)&0xFB;	//Otherwise clear it
+			setLCDStatus(getLCDStatus()& ~LCD_STATUS_LYC_LC_FLAG);
 		}
 	} else if((screenRefreshCount%456)==0){
-		*LY = (*LY)+1;
-		if(*LY==*LYC){	//If LY and LYC are equal
-			*LCDStatus = ((*LCDStatus)&0xFB)|0x4;	//Set Coincidence Flag
-			(*interruptFlags) = (*interruptFlags)|0x2;	//Set LCD STAT Interrupt Request
+		setLY(getLY()+1);
+		if(getLY()==getLYC()){
+			setLCDStatus(getLCDStatus()|LCD_STATUS_LYC_LC_FLAG);
+			if(getLCDStatus()&LCD_STATUS_LYC_LC_FLAG){
+				setInterrupt(INT_LCD);
+			}
 		} else {
-			*LCDStatus = (*LCDStatus)&0xFB;	//Otherwise clear it
+			setLCDStatus(getLCDStatus()& ~LCD_STATUS_LYC_LC_FLAG);
 		}
 	}	
 }
@@ -406,8 +427,7 @@ int backgroundBufferFill(void *arguments){
 	int tileOffsetX;
 	int tileOffsetY;
 	
-	tileData *BGTileData = (tileData*)vramBanks;
-	char *BGTileMap = NULL;
+	unsigned char *BGTileMap = NULL;
 	
 	int (*backgroundBuffer)[144] = args[2];
 	//drawBuffer backgroundBuffer;
@@ -440,40 +460,40 @@ int backgroundBufferFill(void *arguments){
 		//memset(tilesBuffered,0,160*144);
 		memset(backgroundBuffer,0,160*144);
 		
-		if((*LCDControl)&LCD_CONTROL_BG_ENABLE){
+		if(getLCDControl()&LCD_CONTROL_BG_ENABLE){
 		
-			if(((*LCDControl)&LCD_CONTROL_BG_TILE_MAP)==0){
+			if((getLCDControl()&LCD_CONTROL_BG_TILE_MAP)==0){
 				BGTileMap = vramBanks+0x1800;
 			} else {
 				BGTileMap = vramBanks+0x1C00;
 			}
 		
-			bgPalette[0] = basePalette[(*BGPaletteData)&0x3];
-			bgPalette[1] = basePalette[((*BGPaletteData)&0xC)>>2];
-			bgPalette[2] = basePalette[((*BGPaletteData)&0x30)>>4];
-			bgPalette[3] = basePalette[((*BGPaletteData)&0xC0)>>6];
+			bgPalette[0] = basePalette[getBGPaletteData()&0x3];
+			bgPalette[1] = basePalette[(getBGPaletteData()&0xC)>>2];
+			bgPalette[2] = basePalette[(getBGPaletteData()&0x30)>>4];
+			bgPalette[3] = basePalette[(getBGPaletteData()&0xC0)>>6];
 			
 			for(i=-1;i<TILES_PER_COLUMN;i++){
 				for(j=-1;j<TILES_PER_ROW;j++){
 				
-					tileOffsetX = (*scrollX)/8 + j;
+					tileOffsetX = getscrollX()/8 + j;
 					if(tileOffsetX >= 32){
 						tileOffsetX-=32;
 					}
-					tileOffsetY = (*scrollY)/8 + i;
+					tileOffsetY = getscrollY()/8 + i;
 					if(tileOffsetY >= 32){
 						tileOffsetY-=32;
 					}
 										
 					currTile = (unsigned int)BGTileMap[tileOffsetY*32+tileOffsetX]&0xFF;				
 					
-					if((*LCDControl)&LCD_CONTROL_BG_TILE_DATA){
-						drawBGTileToBuffer(currTile&0x1FF,backgroundBuffer,j*8+(*scrollX%8),i*8+(*scrollY%8),bgPalette);
+					if(getLCDControl()&LCD_CONTROL_BG_TILE_DATA){
+						drawBGTileToBuffer(currTile&0x1FF,backgroundBuffer,j*8+(getscrollX()%8),i*8+(getscrollY()%8),bgPalette);
 					} else {
 						if(currTile<0x80){
-							drawBGTileToBuffer((currTile+0x100)&0x1FF,backgroundBuffer,j*8+(*scrollX%8),i*8+(*scrollY%8),bgPalette);
+							drawBGTileToBuffer((currTile+0x100)&0x1FF,backgroundBuffer,j*8+(getscrollX()%8),i*8+(getscrollY()%8),bgPalette);
 						} else {
-							drawBGTileToBuffer((currTile)&0x1FF,backgroundBuffer,j*8+(*scrollX%8),i*8+(*scrollY%8),bgPalette);
+							drawBGTileToBuffer((currTile)&0x1FF,backgroundBuffer,j*8+(getscrollX()%8),i*8+(getscrollY()%8),bgPalette);
 						}
 					}
 						
@@ -497,7 +517,7 @@ int backgroundBufferFill(void *arguments){
 		SDL_SemPost(backgroundEndSem);
 	}	
 	
-	return;
+	return 0;
 }
 
 int windowBufferFill(void *arguments){
@@ -522,7 +542,6 @@ int windowBufferFill(void *arguments){
 	int windowPalette[4];
 	
 	
-	tileData *BGTileData = (tileData*)vramBanks;
 	char *BGTileMap = NULL;
 	
 	int i,j;
@@ -541,28 +560,28 @@ int windowBufferFill(void *arguments){
 			}
 		}
 		
-		if(((*LCDControl)&LCD_CONTROL_WINDOW_ENABLE)!=0){
+		if((getLCDControl()&LCD_CONTROL_WINDOW_ENABLE)!=0){
 			
 			
-			if(((*WX)<167)&&((*WY)<144)){	//Window on screen
+			if((getWX()<167)&&(getWY()<144)){	//Window on screen
 				
-				if(((*LCDControl)&LCD_CONTROL_WINDOW_TILE_MAP)==0){
+				if((getLCDControl()&LCD_CONTROL_WINDOW_TILE_MAP)==0){
 					BGTileMap = (char*)(vramBanks+0x1800);
 				} else {
 					BGTileMap = (char*)(vramBanks+0x1C00);
 				}
 				
-				windowPalette[0] = basePalette[(*BGPaletteData)&0x3];
-				windowPalette[1] = basePalette[((*BGPaletteData)&0xC)>>2];
-				windowPalette[2] = basePalette[((*BGPaletteData)&0x30)>>4];
-				windowPalette[3] = basePalette[((*BGPaletteData)&0xC0)>>6];
+				windowPalette[0] = basePalette[getBGPaletteData()&0x3];
+				windowPalette[1] = basePalette[(getBGPaletteData()&0xC)>>2];
+				windowPalette[2] = basePalette[(getBGPaletteData()&0x30)>>4];
+				windowPalette[3] = basePalette[(getBGPaletteData()&0xC0)>>6];
 				
-				for(i=0;i*8+((*WX)-7)<160;i++){
-					for(j=0;j*8+(*WY)<144;j++){
+				for(i=0;i*8+(getWX()-7)<160;i++){
+					for(j=0;j*8+getWY()<144;j++){
 						currTile = BGTileMap[i*32+j];
 						currTile += 128;	//Make the number unsigned
 						
-						drawBGTileToBuffer(0x81,windowBuffer,i*8+((*WX)-7),j*8+(*WY),windowPalette);
+						drawBGTileToBuffer(0x81,windowBuffer,i*8+getWX()-7,j*8+getWY(),windowPalette);
 					}
 				}
 			}
@@ -573,7 +592,7 @@ int windowBufferFill(void *arguments){
 		SDL_SemPost(windowEndSem);
 	}
 	
-	return;
+	return 0;
 }
 	
 int spriteBufferFill(void *arguments){
@@ -636,7 +655,7 @@ int spriteBufferFill(void *arguments){
 		*frontSpriteBufferComplete = 0;
 		*beginFillingSpriteBuffer = 0;
 		
-		if(*(LCDControl)&LCD_CONTROL_SPRITE_ENABLE){
+		if(getLCDControl()&LCD_CONTROL_SPRITE_ENABLE){
 			if(spriteTableChanged == 1){	//The table must be rearranged
 				//spriteListSort(&firstSprite,NULL);
 				spriteTableChanged = 0;
@@ -649,7 +668,7 @@ int spriteBufferFill(void *arguments){
 			//Fill the Palettes
 			sprite0Palette[0] = colorTransparent;
 			for(i=1;i<4;i++){
-				switch(((*obj0Palette)>>(i*2))&0x3){
+				switch((getobj0Palette()>>(i*2))&0x3){
 					case 0:
 						sprite0Palette[i] = basePalette[0];
 						break;
@@ -667,7 +686,7 @@ int spriteBufferFill(void *arguments){
 			
 			sprite1Palette[0] = colorTransparent;
 			for(i=1;i<4;i++){
-				switch(((*obj1Palette)>>(i*2))&0x3){
+				switch((getobj1Palette()>>(i*2))&0x3){
 					case 0:
 						sprite1Palette[i] = basePalette[0];
 						break;
@@ -700,7 +719,7 @@ int spriteBufferFill(void *arguments){
 				spriteTileNum = OAMTableEntry[currSprite->spriteNum].tile;
 				spriteFlags = OAMTableEntry[currSprite->spriteNum].flags;
 				
-				if((spriteY>=0)&&(spriteY<160)){	//Outside of range, don't draw
+				if(spriteY<160){	//Outside of range, don't draw
 					tooManySprites = 0;
 					
 					for(i=0;i<8;i++){	//Checks for too many sprites
@@ -728,7 +747,7 @@ int spriteBufferFill(void *arguments){
 						//printf("Drawing spriteNum: %d\n",currSprite->spriteNum);
 						
 						//Draw the actual sprites
-						if(((*LCDControl)&LCD_CONTROL_SPRITE_8X16) == 0){
+						if((getLCDControl()&LCD_CONTROL_SPRITE_8X16) == 0){
 							//8x8 Sprites
 							if((spriteFlags&OAM_FLAG_PRIORITY)==0){
 								//Above Background
@@ -800,7 +819,7 @@ int spriteBufferFill(void *arguments){
 
 		SDL_SemPost(spriteEndSem);
 	}
-	return;
+	return 0;
 }			
 	
 int drawVideo(void* args){
@@ -822,24 +841,17 @@ int drawVideo(void* args){
 	void* windowArgs[3];
 	void* spriteArgs[5];
 	
-	int i,j,a,b;
-	
-	int* enlargePixelData;
+	int i,j;
 	
 	SDL_Surface* screenBitmap = NULL;
-	SDL_Surface* enlargedBitmap = NULL;
-	
-	SDL_Rect topLeftRect;
-	
 	
 	drawBuffer backgroundBuffer;
 	drawBuffer windowBuffer;
 	drawBuffer backSpriteBuffer;
 	drawBuffer frontSpriteBuffer;
 	
-	double fps;
 	unsigned int currTime;
-	unsigned int prevTime;
+	unsigned int prevTime = 0;
 	int framesElapsed = 0;
 	
 	printf("Video Thread Started!\n");
@@ -902,10 +914,10 @@ int drawVideo(void* args){
 	drawingComplete=1;
 
 	while(1){
-		//if(shouldFillBuffers == 1){
-		printf("Waiting on fillBuffersSem\n");
-		SDL_SemWait(fillBuffersSem);
-		printf("Recieved fillBuffersSem\n");
+		if(shouldFillBuffers == 1){
+		//printf("Waiting on fillBuffersSem\n");
+//		SDL_SemWait(fillBuffersSem);
+		//printf("Recieved fillBuffersSem\n");
 			/*backSpriteBufferComplete = 1;
 			frontSpriteBufferComplete = 1;
 			backgroundBufferComplete = 0;
@@ -931,10 +943,10 @@ int drawVideo(void* args){
 			buffersFull = 1;
 			shouldFillBuffers = 0;
 		
-		//} else if(shouldRedraw == 1){
-		printf("Waiting on drawVideoStartSem\n");
-		SDL_SemWait(drawVideoStartSem);
-		printf("Recieved drawVideoStartSem\n");
+		} else if(shouldRedraw == 1){
+		//printf("Waiting on drawVideoStartSem\n");
+		//SDL_SemWait(drawVideoStartSem);
+		//printf("Recieved drawVideoStartSem\n");
 
 			if(SDL_LockSurface(display) == -1){
 				printf("Couldn't Lock display!!!\n");
@@ -963,10 +975,7 @@ int drawVideo(void* args){
 			
 			SDL_UnlockSurface(display);
 		
-			enlargePixelData = (int*)screenBitmap->pixels;
-			
 			SDL_Flip(display);
-			
 			
 			if(framesElapsed == 60){
 				framesElapsed = 0;
@@ -990,8 +999,8 @@ int drawVideo(void* args){
 			shouldRedraw = 0;
 			drawingComplete = 1;
 
-		//SDL_SemPost(drawVideoCompleteSem);
-			
+		SDL_SemPost(drawVideoCompleteSem);
+		}	
 		
 	}
 }
@@ -999,6 +1008,10 @@ int drawVideo(void* args){
 void initVideo(){
 	
 	SDL_Thread *drawThread;
+
+	fillBuffersSem = SDL_CreateSemaphore(0);
+	drawVideoStartSem = SDL_CreateSemaphore(0);
+	drawVideoCompleteSem = SDL_CreateSemaphore(1);
 
 	display = SDL_SetVideoMode(160*WINDOW_SCALE,144*WINDOW_SCALE,32,SDL_SWSURFACE);
 	if(display == NULL){
