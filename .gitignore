@@ -1,0 +1,6 @@
+*.gb
+*.sav
+*.exe
+*.o
+*~
+main
