@@ -3,8 +3,6 @@
 #include <string.h>
 #include <unistd.h>
 
-#include <SDL/SDL.h>
-
 #include "main.h"
 #include "core.h"
 #include "instructions.h"

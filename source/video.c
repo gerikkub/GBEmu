@@ -13,10 +13,9 @@
 #include "io.h"
 #include "dma.h"
 #include "joypad.h"
-#include "SDL_rotozoom.h"
 
-#include <SDL/SDL.h>
-#include <SDL/SDL_thread.h>
+#include <SDL2/SDL.h>
+#include <SDL2/SDL_thread.h>
 
 #define BIT(x)	(1<<x)
 
@@ -74,6 +73,9 @@
 #define MODE_2_THRESHOLD	0
 #define MODE_3_THRESHOLD	77
 
+#define PIXEL_FORMAT SDL_PIXELFORMAT_ARGB8888
+
+typedef int drawBuffer[160][144];
 
 int shouldFillBuffers = 0;	//Will be set to 1 when screen buffers should be filled
 int shouldRedraw = 0;		//Will be set when entire screen should be blitted to the screen
@@ -81,12 +83,8 @@ int drawingComplete = 0;	//Will be set to 1 when a new line can be drawn
 int buffersFull = 0;		//Will be set to 1 when buffers are full and ready for drawing
 int spriteTableChanged = 1;	//Will be set to one when the list needs to be sorted
 
-int BGDrawBuffer[160][144];
-int windowDrawBuffer[160][144];
-int spriteBackBuffer[160][144];	//Behind background
-int spriteFrontBuffer[160][144];
-
-SDL_Surface *display;
+static SDL_Window* window;
+static SDL_Renderer* renderer;
 
 SDL_sem *drawVideoStartSem;
 SDL_sem *drawVideoCompleteSem;
@@ -98,7 +96,10 @@ SDL_sem *spriteEndSem;
 SDL_sem *windowEndSem;
 SDL_sem *backgroundEndSem;
 
-typedef int drawBuffer[160][144];
+static SDL_sem *drawOnMainThreadSem;
+static int renderScreen[144][160];
+static SDL_Texture* screenTexture;	
+
 
 typedef struct tileLine_T {
 	char lowBits;
@@ -122,10 +123,6 @@ typedef struct OAMEntry_t {
 }__attribute__((packed)) OAMEntry;
 
 SpriteList* firstSprite;
-
-void dummyFunct2(){
-	return;
-}
 
 void spriteListInsert(SpriteList** first,SpriteList* insertPoint,int spriteNum){
 	
@@ -234,13 +231,12 @@ void updateVideo(int screenRefreshCount){
 	if(screenRefreshCount<65664){	//Not in V-Blank
 	
 		if(screenRefreshCount == 0){
-			//while(drawingComplete == 0);
-			//SDL_SemWait(drawVideoCompleteSem);
+			SDL_SemWait(drawVideoCompleteSem);
 			drawingComplete = 0;
 			setLY(0);
 			setLCDStatus((getLCDStatus()&0xFC)|LCD_MODE2);			
 			shouldFillBuffers=1;
-			//SDL_SemPost(fillBuffersSem);
+			SDL_SemPost(fillBuffersSem);
 			
 			//If Mode 2 interrupt enabled
 			if((getLCDStatus()&LCD_STATUS_OAM_INT)!=0){
@@ -287,7 +283,7 @@ void updateVideo(int screenRefreshCount){
 	
 		buffersFull = 0;
 		shouldRedraw = 1;
-		//SDL_SemPost(drawVideoStartSem);
+		SDL_SemPost(drawVideoStartSem);
 		setLCDStatus((getLCDStatus()&0xFC)|LCD_STATUS_MODE1);
 		setLY(getLY() + 1);
 		
@@ -316,41 +312,12 @@ void updateVideo(int screenRefreshCount){
 	}	
 }
 
-void putPixelSDL(int x,int y,int value,SDL_Surface *dest){
-	int* displayPixels = (int*)dest->pixels;
-
-	displayPixels[y*(SCREEN_WIDTH)+x] = value;
-}
-
-char getAlpha(int pixel){
-	/*char r;
-	char g;
-	char b;
-	char a;
-	
-	SDL_GetRGBA(pixel,display->format,&r,&g,&b,&a);
-	
-	return a;*/
-	return pixel>>24;
+char hasAlpha(int pixel) {
+   return ((pixel >> 24)&0xFF) == 0x80;
 }
 
 int checkForWhite(int pixel){
-	/*char r,g,b,a;
-	
-	SDL_GetRGBA(pixel,display->format,&r,&g,&b,&a);
-	
-	if((r==0xFF)&&(g==0xFF)&&(b==0xFF)){
-		return 1;
-	} else {
-		return 0;
-	}*/
-	
-	if((pixel&0xFFFFFF) == 0xFFFFFF){
-		return 1;
-	} else {
-		return 0;
-	}
-	
+	return (pixel&0xFFFFFF) == 0xFFFFFF;
 }
 
 void drawBGTileToBuffer(unsigned int tileNum,drawBuffer outputBuffer,int x,int y,int palette[4]){
@@ -359,18 +326,12 @@ void drawBGTileToBuffer(unsigned int tileNum,drawBuffer outputBuffer,int x,int y
 	
 	int tileRow,tileColumn;
 	
-	/*if((tileNum&0xFF)==0xB1){
-		//printf("Drawing Tile 0xB1 to X: %d\t Y: %d\n",x,y);
-	}*/	
-	
 	if((x<=-8)||(x>160)){
 		return;
 	}
 	if((y<=-8)||(y>144)){
 		return;
 	}
-	
-	dummyFunct2();
 	
 	for(tileRow=0;tileRow<8;tileRow++){
 		for(tileColumn=0;tileColumn<8;tileColumn++){
@@ -432,19 +393,8 @@ int backgroundBufferFill(void *arguments){
 	int (*backgroundBuffer)[144] = args[2];
 	//drawBuffer backgroundBuffer;
 	//backgroundBuffer = args[2];
-	
-	int colorWhite = SDL_MapRGB(display->format,0xFF,0xFF,0xFF);
-	int colorLightGray = SDL_MapRGB(display->format,0xAA,0xAA,0xAA);
-	int colorDarkGray = SDL_MapRGB(display->format,0x55,0x55,0x55);
-	int colorBlack = SDL_MapRGB(display->format,0,0,0);
-	
-	printf("white: %d\n",checkForWhite(colorWhite));
-	
-	int basePalette[4];
-	basePalette[3] = colorBlack;
-	basePalette[2] = colorDarkGray;
-	basePalette[1] = colorLightGray;
-	basePalette[0] = colorWhite;
+
+	int* basePalette = (int*)args[3];
 	
 	int bgPalette[4];
 	
@@ -508,7 +458,7 @@ int backgroundBufferFill(void *arguments){
 		} else {
 			for(i=0;i<144;i++){
 				for(j=0;j<160;j++){
-					backgroundBuffer[j][i] = colorWhite;
+					backgroundBuffer[j][i] = basePalette[0];
 				}
 			}
 		}
@@ -527,17 +477,8 @@ int windowBufferFill(void *arguments){
 	char* beginFillingWindowBuffer = (char*)args[1];
 	int (*windowBuffer)[144] = args[2];
 	
-	int colorTransparent = SDL_MapRGBA(display->format,255,255,255,0);	
-	int colorWhite = SDL_MapRGB(display->format,0xFF,0xFF,0xFF);
-	int colorLightGray = SDL_MapRGB(display->format,0xAA,0xAA,0xAA);
-	int colorDarkGray = SDL_MapRGB(display->format,0x55,0x55,0x55);
-	int colorBlack = SDL_MapRGB(display->format,0,0,0);
 	
-	int basePalette[4];
-	basePalette[3] = colorBlack;
-	basePalette[2] = colorDarkGray;
-	basePalette[1] = colorLightGray;
-	basePalette[0] = colorWhite;
+	int* basePalette = (int*)args[3];
 	
 	int windowPalette[4];
 	
@@ -548,20 +489,18 @@ int windowBufferFill(void *arguments){
 	unsigned int currTile;
 	
 	while(1){
-		//while(*beginFillingWindowBuffer == 0);
 		SDL_SemWait(windowStartSem);
-		//SDL_SemWait(windowSem);
 		*beginFillingWindowBuffer = 0;
 		*windowBufferComplete = 0;
-		
+
 		for(i=0;i<144;i++){
 			for(j=0;j<160;j++){
-				windowBuffer[j][i] = colorTransparent;
+				windowBuffer[j][i] = basePalette[4];
 			}
 		}
-		
-		if((getLCDControl()&LCD_CONTROL_WINDOW_ENABLE)!=0){
-			
+	
+	
+		if(getLCDControl()&LCD_CONTROL_WINDOW_ENABLE){ 
 			
 			if((getWX()<167)&&(getWY()<144)){	//Window on screen
 				
@@ -604,19 +543,7 @@ int spriteBufferFill(void *arguments){
 	int (*backSpriteBuffer)[144] = args[3];
 	int (*frontSpriteBuffer)[144] = args[4];
 	
-	int colorTransparent = 0xAA000000;	//Top 8 bits unused. Will use to mask out invisible pixels
-	int colorWhite = SDL_MapRGB(display->format,0xFF,0xFF,0xFF);
-	int colorLightGray = SDL_MapRGB(display->format,0xAA,0xAA,0xAA);
-	int colorDarkGray = SDL_MapRGB(display->format,0x55,0x55,0x55);
-	int colorBlack = SDL_MapRGB(display->format,0,0,0);
-	
-	printf("Alpha Value of transparent: %X\n",colorTransparent);
-	
-	int basePalette[4];
-	basePalette[3] = colorBlack;
-	basePalette[2] = colorDarkGray;
-	basePalette[1] = colorLightGray;
-	basePalette[0] = colorWhite;
+	int* basePalette = (int*)args[5];
 	
 	int sprite0Palette[4];
 	int sprite1Palette[4];
@@ -642,10 +569,9 @@ int spriteBufferFill(void *arguments){
 	}
 	currSprite->spriteNum = 39;
 	currSprite->next = NULL;
-	
-	/*for(currSprite = firstSprite;currSprite!=NULL;currSprite = currSprite->next){
-		printf("currSprite: %d\n",currSprite->spriteNum);
-	}*/
+
+   memset(backSpriteBuffer, 0x80, 144 * 160 * 4);
+   memset(frontSpriteBuffer, 0x80, 144 * 160 * 4);
 	
 	while(1){
 		//while(*beginFillingSpriteBuffer == 0);
@@ -657,7 +583,6 @@ int spriteBufferFill(void *arguments){
 		
 		if(getLCDControl()&LCD_CONTROL_SPRITE_ENABLE){
 			if(spriteTableChanged == 1){	//The table must be rearranged
-				//spriteListSort(&firstSprite,NULL);
 				spriteTableChanged = 0;
 			}
 			
@@ -666,7 +591,7 @@ int spriteBufferFill(void *arguments){
 			}
 			
 			//Fill the Palettes
-			sprite0Palette[0] = colorTransparent;
+			sprite0Palette[0] = basePalette[4];
 			for(i=1;i<4;i++){
 				switch((getobj0Palette()>>(i*2))&0x3){
 					case 0:
@@ -684,7 +609,7 @@ int spriteBufferFill(void *arguments){
 				}
 			}
 			
-			sprite1Palette[0] = colorTransparent;
+			sprite1Palette[0] = basePalette[4];
 			for(i=1;i<4;i++){
 				switch((getobj1Palette()>>(i*2))&0x3){
 					case 0:
@@ -704,14 +629,11 @@ int spriteBufferFill(void *arguments){
 			
 			for(i=0;i<144;i++){
 				for(j=0;j<160;j++){
-					backSpriteBuffer[j][i] = colorTransparent;
-					frontSpriteBuffer[j][i] = colorTransparent;
+					backSpriteBuffer[j][i] = basePalette[4];
+					frontSpriteBuffer[j][i] = basePalette[4];
+               printf("%X\n", basePalette[4]);
 				}
 			}
-			
-			/*for(currSprite = firstSprite;currSprite!=NULL;currSprite = currSprite->next){
-				printf("spriteNum: %d\n",currSprite->spriteNum);
-			}*/
 			
 			for(currSprite = firstSprite;currSprite!=NULL;currSprite = currSprite->next){
 				spriteY = OAMTableEntry[currSprite->spriteNum].Y;
@@ -719,7 +641,7 @@ int spriteBufferFill(void *arguments){
 				spriteTileNum = OAMTableEntry[currSprite->spriteNum].tile;
 				spriteFlags = OAMTableEntry[currSprite->spriteNum].flags;
 				
-				if(spriteY<160){	//Outside of range, don't draw
+				if(spriteY<160 && spriteX<144){	//Outside of range, don't draw
 					tooManySprites = 0;
 					
 					for(i=0;i<8;i++){	//Checks for too many sprites
@@ -837,13 +759,12 @@ int drawVideo(void* args){
 	SDL_Thread *windowBufferFillThread = NULL;
 	SDL_Thread *spriteBufferFillThread = NULL;
 	
-	void* backgroundArgs[3];
-	void* windowArgs[3];
-	void* spriteArgs[5];
+	void* backgroundArgs[4];
+	void* windowArgs[4];
+	void* spriteArgs[6];
 	
 	int i,j;
-	
-	SDL_Surface* screenBitmap = NULL;
+
 	
 	drawBuffer backgroundBuffer;
 	drawBuffer windowBuffer;
@@ -855,21 +776,39 @@ int drawVideo(void* args){
 	int framesElapsed = 0;
 	
 	printf("Video Thread Started!\n");
+   
+   SDL_PixelFormat* pixelFormat = SDL_AllocFormat(PIXEL_FORMAT);
+
+	int colorWhite = SDL_MapRGB(pixelFormat, 0xFF, 0xFF, 0xFF);
+	int colorLightGray = SDL_MapRGB(pixelFormat, 0xAA, 0xAA, 0xAA);
+	int colorDarkGray = SDL_MapRGB(pixelFormat, 0x55, 0x55, 0x55);
+	int colorBlack = SDL_MapRGB(pixelFormat, 0, 0, 0);
+   int colorTransparent = SDL_MapRGBA(pixelFormat, 0x80, 0x80, 0x80, 0x80);
+	
+	int basePalette[5];
+   basePalette[4] = colorTransparent;
+	basePalette[3] = colorBlack;
+	basePalette[2] = colorDarkGray;
+	basePalette[1] = colorLightGray;
+	basePalette[0] = colorWhite;
 
 
 	backgroundArgs[0] = &backgroundBufferComplete;
 	backgroundArgs[1] = &beginFillingBackgroundBuffer;
 	backgroundArgs[2] = backgroundBuffer;
+   backgroundArgs[3] = basePalette;
 	
 	windowArgs[0] = &windowBufferComplete;
 	windowArgs[1] = &beginFillingWindowBuffer;
 	windowArgs[2] = windowBuffer;
+   windowArgs[3] = basePalette;
 	
 	spriteArgs[0] = &backSpriteBufferComplete;
 	spriteArgs[1] = &frontSpriteBufferComplete;
 	spriteArgs[2] = &beginFillingSpriteBuffer;
 	spriteArgs[3] = backSpriteBuffer;
 	spriteArgs[4] = frontSpriteBuffer;
+   spriteArgs[5] = basePalette;
 	
 	spriteStartSem = SDL_CreateSemaphore(0);
 	windowStartSem = SDL_CreateSemaphore(0);
@@ -879,129 +818,86 @@ int drawVideo(void* args){
 	windowEndSem = SDL_CreateSemaphore(0);
 	backgroundEndSem = SDL_CreateSemaphore(0);
 	
-	screenBitmap = SDL_CreateRGBSurface(SDL_SWSURFACE,160*WINDOW_SCALE,144*WINDOW_SCALE,32,0,0,0,0);
-	if(screenBitmap == NULL){
-		printf("Unable to create screenBuffer Exiting!!!\n");
-		exit(1);
-	}
-	
-	printf("Starting to create threads\n");	
-	
-	backgroundBufferFillThread = SDL_CreateThread(backgroundBufferFill,backgroundArgs);
+	backgroundBufferFillThread = SDL_CreateThread(backgroundBufferFill, "Background Draw", backgroundArgs);
 	if(backgroundBufferFillThread == NULL){
 		printf("Unable to create backgroundBufferFillThread Exiting!!!\n");
 		exit(1);
 	}
 	
-	windowBufferFillThread = SDL_CreateThread(windowBufferFill,windowArgs);
+	windowBufferFillThread = SDL_CreateThread(windowBufferFill, "Window Draw", windowArgs);
 	if(windowBufferFillThread == NULL){
 		printf("Unable to create windowBufferFillThread Exiting!!!\n");
 		exit(1);
 	}
 	
-	spriteBufferFillThread = SDL_CreateThread(spriteBufferFill,spriteArgs);
+	spriteBufferFillThread = SDL_CreateThread(spriteBufferFill, "Sprite Draw", spriteArgs);
 	if(spriteBufferFillThread == NULL){
 		printf("Unable to create spriteBufferFillThread Exiting!!!\n");
 		exit(1);
 	}
 	
-	printf("Finished creating Threads\n");
-	
-
-
-
-
 	drawingComplete=1;
 
 	while(1){
-		if(shouldFillBuffers == 1){
-		//printf("Waiting on fillBuffersSem\n");
-//		SDL_SemWait(fillBuffersSem);
-		//printf("Recieved fillBuffersSem\n");
-			/*backSpriteBufferComplete = 1;
-			frontSpriteBufferComplete = 1;
-			backgroundBufferComplete = 0;
-			windowBufferComplete = 1;
-			
-			beginFillingBackgroundBuffer = 1;
-			beginFillingWindowBuffer = 1;
-			beginFillingSpriteBuffer = 1;*/
+		SDL_SemWait(fillBuffersSem);
+	   SDL_SemPost(spriteStartSem);
+		SDL_SemPost(windowStartSem);
+		SDL_SemPost(backgroundStartSem);
 
-			SDL_SemPost(spriteStartSem);
-			SDL_SemPost(windowStartSem);
-			SDL_SemPost(backgroundStartSem);
-
-			SDL_SemWait(spriteEndSem);
-			SDL_SemWait(windowEndSem);
-			SDL_SemWait(backgroundEndSem);
+		SDL_SemWait(spriteEndSem);
+		SDL_SemWait(windowEndSem);
+		SDL_SemWait(backgroundEndSem);
 			
-			/*while(backSpriteBufferComplete==0);
-			while(frontSpriteBufferComplete==0);
-			while(backgroundBufferComplete==0);
-			while(windowBufferComplete==0);*/
-			
-			buffersFull = 1;
-			shouldFillBuffers = 0;
+		buffersFull = 1;
+		shouldFillBuffers = 0;
 		
-		} else if(shouldRedraw == 1){
-		//printf("Waiting on drawVideoStartSem\n");
-		//SDL_SemWait(drawVideoStartSem);
-		//printf("Recieved drawVideoStartSem\n");
+		SDL_SemWait(drawVideoStartSem);
 
-			if(SDL_LockSurface(display) == -1){
-				printf("Couldn't Lock display!!!\n");
-			}
-			
-			for(i=0;i<160;i++){
-				for(j=0;j<144;j++){
-					putPixelSDL(i,j,backgroundBuffer[i][j],display);
-					if(checkForWhite(backgroundBuffer[i][j]) == 1){	//If background color is 0
-						//printf("Drawing backsprite\n");
-						if((getAlpha(backSpriteBuffer[i][j])&0xFF) != 0xAA){
-							//printf("Actually Drawing: %X\n",getAlpha(backSpriteBuffer[i][j])&0xFF);
-							putPixelSDL(i,j,backSpriteBuffer[i][j],display);
-						}
-					}
-					/*if(getAlpha(windowBuffer[i][j]) == 0){
-						putPixelSDL(i,j,windowBuffer[i][j]);
-					}*/
-					if((getAlpha(frontSpriteBuffer[i][j])&0xFF) != 0xAA){
-						//printf("Drawing sprite alpha: %hhX\n",getAlpha(frontSpriteBuffer[i][j]));
-						
-						putPixelSDL(i,j,frontSpriteBuffer[i][j],display);
-					}
+   	for(i=0;i<160;i++){
+   		for(j=0;j<144;j++){
+            renderScreen[j][i] = backgroundBuffer[i][j];
+
+				if(checkForWhite(backgroundBuffer[i][j])){	//If background color is 0
+					if(!hasAlpha(backSpriteBuffer[i][j])){
+                    renderScreen[j][i] = backSpriteBuffer[i][j]; 
+               }
+				} 
+
+				if(!hasAlpha(windowBuffer[i][j])){
+                 renderScreen[j][i] = windowBuffer[i][j];
+		      }
+
+				if(!hasAlpha(frontSpriteBuffer[i][j])){
+                 renderScreen[j][i] = frontSpriteBuffer[i][j];
 				}
 			}
+		}
+
+      SDL_SemPost(drawOnMainThreadSem);
+         			
+		if(framesElapsed == 60){
+			framesElapsed = 0;
+			currTime = SDL_GetTicks();
 			
-			SDL_UnlockSurface(display);
-		
-			SDL_Flip(display);
-			
-			if(framesElapsed == 60){
-				framesElapsed = 0;
-				currTime = SDL_GetTicks();
-				
-				if((currTime-prevTime)<1000){	//Updating more than 60 times per second
-					printf("Delaying fps\n");
-					SDL_Delay(1000-(currTime-prevTime));
-				} else {
-					printf("fps: %f\n",60./((float)(currTime-prevTime)/1000.));
-				}
-				
-				prevTime = currTime;
-				
-				
+			if((currTime-prevTime)<1000){	//Updating more than 60 times per second
+				printf("Delaying fps\n");
+				SDL_Delay(1000-(currTime-prevTime));
 			} else {
-				framesElapsed++;
+				printf("fps: %f\n",60./((float)(currTime-prevTime)/1000.));
 			}
 			
+			prevTime = currTime;
 			
-			shouldRedraw = 0;
-			drawingComplete = 1;
-
-		SDL_SemPost(drawVideoCompleteSem);
-		}	
+			
+		} else {
+			framesElapsed++;
+		}
 		
+		
+		shouldRedraw = 0;
+		drawingComplete = 1;
+
+	   SDL_SemPost(drawVideoCompleteSem);
 	}
 }
 	
@@ -1012,76 +908,63 @@ void initVideo(){
 	fillBuffersSem = SDL_CreateSemaphore(0);
 	drawVideoStartSem = SDL_CreateSemaphore(0);
 	drawVideoCompleteSem = SDL_CreateSemaphore(1);
+   drawOnMainThreadSem = SDL_CreateSemaphore(0);
 
-	display = SDL_SetVideoMode(160*WINDOW_SCALE,144*WINDOW_SCALE,32,SDL_SWSURFACE);
-	if(display == NULL){
+	if(SDL_CreateWindowAndRenderer(160, 144, SDL_WINDOW_SHOWN, &window, &renderer) == -1) {
 		printf("Display could not be created!!!\n");
 		exit(0);
 	}	
-	
-	drawThread = SDL_CreateThread(drawVideo,NULL);
+
+   if(window == NULL) {
+      printf("Window NULL\n");
+      exit(0);
+   }
+
+   if(renderer == NULL) {
+      printf("Renderer NULL\n");
+      exit(0);
+   }
+
+   SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "nearest");
+   //SDL_RenderSetLogicalSize(renderer, 160, 144);
+   SDL_RenderSetLogicalSize(renderer, 160, 144);
+
+
+   SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+   SDL_RenderClear(renderer);
+   SDL_RenderPresent(renderer);
+
+   screenTexture = SDL_CreateTexture(renderer, PIXEL_FORMAT, SDL_TEXTUREACCESS_STREAMING, 160, 144);
+	if(screenTexture == NULL){
+		printf("Unable to create screenBuffer Exiting!!!\n");
+		exit(1);
+	}	
+	drawThread = SDL_CreateThread(drawVideo, "Video", NULL);
 	if(drawThread == NULL){
 		printf("Couldn't create drawThread!!!\n");
 		exit(0);
-	}
-	
+   }
+
 }	
 
+void drawVideoFromMain() {
+
+   if(SDL_SemValue(drawOnMainThreadSem) > 0) {
+      SDL_SemWait(drawOnMainThreadSem);
+
+      SDL_RenderClear(renderer);
+
+      if(SDL_UpdateTexture(screenTexture, NULL, renderScreen, 640) == -1) {
+         printf("Unable to update Texture\n");
+      }
+
+      SDL_RenderCopy(renderer, screenTexture, NULL, NULL);
+      SDL_RenderPresent(renderer);
+
+   }
+
+   
+}
 
 
-//Only used for testing the SpriteList structure and associated functions
-/*
-void testLinkedList(){
-	
-	int i;
-	
-	SpriteList *firstSprite;
-	SpriteList *currSprite = NULL;	
-	
-	SpriteList *search;
-	
-	//Create an initial setup for the Sprite Linked List
-	firstSprite = (SpriteList*)malloc(sizeof(SpriteList));
-	currSprite = firstSprite;
-	for(i=0;i<39;i++){
-		currSprite->spriteNum = i;
-		currSprite->next = (SpriteList*)malloc(sizeof(SpriteList));
-		currSprite = currSprite->next;
-	}
-	currSprite->spriteNum = 39;
-	currSprite->next = NULL;
-	
-	spriteListInsert(&firstSprite,getSpriteElement(&firstSprite,0),33);
-	spriteListInsert(&firstSprite,getSpriteElement(&firstSprite,9),456);
-	spriteListInsert(&firstSprite,getSpriteElement(&firstSprite,23),3433);
-	spriteListInsert(&firstSprite,getSpriteElement(&firstSprite,25),454);
-	spriteListInsert(&firstSprite,getSpriteElement(&firstSprite,19),87);
-	spriteListInsert(&firstSprite,getSpriteElement(&firstSprite,35),14);
-	spriteListInsert(&firstSprite,getSpriteElement(&firstSprite,2),10000);
-	spriteListInsert(&firstSprite,getSpriteElement(&firstSprite,13),563);
 
-	spriteListInsert(&firstSprite,getSpriteElement(&firstSprite,7),42);
-	
-	//spriteListDelete(&firstSprite,getSpriteElement(&firstSprite,0));
-	//spriteListDelete(&firstSprite,getSpriteElement(&firstSprite,89332));
-	
-	//spriteListInsert(&firstSprite,getSpriteElement(&firstSprite,34),5534532);	
-	
-	for(currSprite = firstSprite;currSprite != NULL;currSprite = currSprite->next){
-		printf("%d\n",currSprite->spriteNum);
-	}
-	
-	unsigned int currSmallestNum;
-	SpriteList *currSmallestSprite;
-	SpriteList *sortSprite = firstSprite;
-	currSprite = firstSprite;
-	
-	spriteListSort(&firstSprite,NULL);
-	
-	printf("\n\n");
-	
-	for(currSprite = firstSprite;currSprite != NULL;currSprite = currSprite->next){
-		printf("%d\n",currSprite->spriteNum);
-	}
-	
-}*/

@@ -15,9 +15,9 @@ static void* calloc_line(int x,int y,int line,char* file){
 	return calloc(x,y);
 }
 
-#define malloc(x) malloc_line(x,__LINE__,__FILE__)
+//#define malloc(x) malloc_line(x,__LINE__,__FILE__)
 
-#define calloc(x,y) calloc_line(x,y,__LINE__,__FILE__)
+//#define calloc(x,y) calloc_line(x,y,__LINE__,__FILE__)
 
 #define W_PRINTF	0
 #define DEBUG_INSTRUCTIONS 0

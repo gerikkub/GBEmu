@@ -14,7 +14,7 @@
 #include "joypad.h"
 #include "instruction_count.h"
 
-#include <SDL/SDL.h>
+#include <SDL2/SDL.h>
 
 #define BIT(x) (1<<x)
 

@@ -2,6 +2,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <SDL2/SDL.h>
+
 #include "main.h"
 #include "core.h"
 #include "mem.h"

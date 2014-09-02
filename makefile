@@ -1,16 +1,17 @@
 BUILDPREFIX := build/
 SOURCEPREFIX := source/
 
-TARGET := main.exe
+TARGET := main
 CFLAGS := -g -fvisibility=hidden -Wpointer-arith -Winit-self\
- -Wformat-nonliteral -Werror -W -Wall -Wno-unused-parameter -Ofast\
- -Wno-unused-function
+ -Wformat-nonliteral -W -Wall -Wno-unused-parameter -Ofast\
+ -Wno-unused-function -fdiagnostics-color=always
 LINUX := 1
 OBJECTS := $(BUILDPREFIX)instruction_count.o $(BUILDPREFIX)timer.o $(BUILDPREFIX)joypad.o $(BUILDPREFIX)dma.o $(BUILDPREFIX)video.o $(BUILDPREFIX)mem.o $(BUILDPREFIX)core.o $(BUILDPREFIX)instructions.o \
 		$(BUILDPREFIX)io.o $(BUILDPREFIX)main.o
 
+
 all: $(TARGET) $(BUILD)
-	
+
 #	gcc -c main.c -o $(BUILDPREFIX)main.o $(CFLAGS)
 #	gcc -c instructions.c -o $(BUILDPREFIX)instructions.o $(CFLAGS)
 #	gcc -c core.c -o $(BUILDPREFIX)core.o $(CFLAGS)
@@ -22,14 +23,15 @@ all: $(TARGET) $(BUILD)
 #	gcc -c timer.c -o $(BUILDPREFIX)timer.o	 $(CFLAGS)	
 	
 	
-$(TARGET): $(OBJECTS)
-	gcc -o main $(OBJECTS) -lmingw32 -lSDLmain -lSDL
 	
 $(BUILDPREFIX)%.o: $(SOURCEPREFIX)%.c
 	gcc -c $< -o $@ $(CFLAGS)
 	
-linux: $(OBJECTS)
-	gcc -o main $(OBJECTS) -lSDL
+main: $(OBJECTS)
+	gcc -o main $(OBJECTS) -lSDL2
+
+main.exe: $(OBJECTS)
+	gcc -o main $(OBJECTS) -lmingw32 -lSDLmain -lSDL
 
 tetris:
 	./main tetris.gb dump.bin reg.txt
@@ -56,7 +58,7 @@ refreshROM:
 	cp ../../ROMs/GBC/Tetris.gb ./tetris.gb	
 	
 debug:
-	gdb main.exe
+	gdb ./main
 
 debugLinux:
 	gdb ./main

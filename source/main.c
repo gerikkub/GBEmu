@@ -18,7 +18,7 @@
 
 #define NO_STDIO_REDIRECT	1
 
-#include <SDL/SDL.h>
+#include <SDL2/SDL.h>
 
 #define REGINST(num) registerInstruction(0x ## num,instruction ## num)
 
@@ -71,13 +71,16 @@ int main(int argc,char** argv){
 	
 	memset(registers,0,24);
 	registerList = registers;
-	
+
 	SDL_Init(SDL_INIT_EVERYTHING);
-	
-	freopen( "CON", "w", stdout );
+   
+	//freopen( "CON", "w", stdout );
 	//freopen( "CON", "w", stderr );
+   printf("Opening ROM\n");
 	
 	FILE* romFile = fopen(argv[1],"rb");
+
+   printf("Opened File\n");
 	
 	if(romFile == NULL){
 		printf("Invalid File Submited: %s\n",argv[1]);
@@ -107,7 +110,7 @@ int main(int argc,char** argv){
 	#else
 	
 		while(i<(fileSize/0x1000)){
-			//printf("i: %d\n",i);
+		//printf("i: %d\n",i);
 			if(fread(romBanks+i*0x1000,1,0x1000,romFile)!=0x1000){
 				if(ferror(romFile)){
 					printf("Error copying file to Memory!!!\n");
@@ -640,6 +643,8 @@ int main(int argc,char** argv){
 	//PCRecallHead = malloc(sizeof(PCRecall*));
 	PCRecallHead = malloc(8);
 	*PCRecallHead = initPCRecall();
+
+
 	
 	initVideo();
 	initJoypad();
@@ -665,170 +670,20 @@ int main(int argc,char** argv){
 	//printf("scrollX init: 0x%p\n",scrollX);
 	//while(timerReady == 0);
 	
-	SDL_Thread *runGameboyThread = SDL_CreateThread(runGameboy,argv);
+	SDL_Thread *runGameboyThread = SDL_CreateThread(runGameboy, "gameboy", argv);
 	if(runGameboyThread == NULL){
 		printf("Unable to create Gameboy Thread. Exiting!!!\n");
 	}
+
+   //drawVideoFromMain();
+   //SDL_Delay(5000);
+   //return 0;
 	
 	while(1){
 	
 		joypadUpdate();
+      drawVideoFromMain();
 	
-		/*count++;
-		if(count == 1000){
-			dumpMemToFile(argv[2]);
-			//dumpRegToFile(argv[3]);
-			count = 0;
-		}*/
-		//dumpMemToFile(argv[2]);
-		
-		//printf("Current PC: %hX\n",getPC());
-		
-		/*#if DEBUG_INSTRUCTIONS == 1
-			dumpRegToFile(argv[3]);
-			if(delayCyclesLeft == 0){
-				printf("PC: %hX nextOpcode: %hhX : \n",getPC()&0xFFFF,readCharFromMem(getPC())&0xFF);
-				cmdChar = getchar();
-				if(cmdChar=='d'){
-					dumpMemToFile(argv[2]);
-					dumpRegToFile(argv[3]);
-					getchar();	//Read in the return
-				} else if(cmdChar == 'n'){
-					thisPC = getPC()&0xFFFF;
-					while(!(((getPC()&0xFFFF)>thisPC)&&((getPC()&0xFFFF)<(thisPC+5)))){
-						if(runCPUCycle()!=0){
-							break;
-						}
-						updateVideo(screenRefreshCount);
-						screenRefreshCount++;
-						if(screenRefreshCount==70224) screenRefreshCount=0;
-						if(isOAMDMAActive()==1){
-							runOAMDMA();
-						}
-						runTimer();
-					}
-					getchar();	//Read in the return
-				} else if(cmdChar == 'c'){
-					while(runCPUCycle()!=0x10){
-						updateVideo(screenRefreshCount);
-						screenRefreshCount++;
-						if(screenRefreshCount==70224) screenRefreshCount=0;
-						if(isOAMDMAActive()==1){
-							runOAMDMA();
-						}
-					}	
-					break;
-				} else if(cmdChar == 'u'){
-					while(runCPUCycle()!=0x10){
-						updateVideo(screenRefreshCount);
-						screenRefreshCount++;
-						if(screenRefreshCount==70224) screenRefreshCount=0;
-						printf("Current PC: 0x%hX\n",getPC());
-						dumpMemToFile(argv[2]);
-						dumpRegToFile(argv[3]);
-					}	
-					break;
-				} else if(cmdChar == 'v'){
-					while(runCPUCycle()!=0x10){
-						updateVideo(screenRefreshCount);
-						screenRefreshCount++;
-						if(screenRefreshCount==70224) screenRefreshCount=0;
-						else if(screenRefreshCount==65664) break;	//V-Blank
-						if(isOAMDMAActive()==1){
-							runOAMDMA();
-						}
-						runTimer();
-					}	
-					getchar();	//Read in the return
-				} else if(cmdChar == 'r'){
-					while(runCPUCycle()!=0x10){
-						updateVideo(screenRefreshCount);
-						screenRefreshCount++;
-						if(screenRefreshCount==70224) screenRefreshCount=0;
-						if((getPC()&0xFFFF)==0x2CD) break;\
-						
-						if(isOAMDMAActive()==1){
-							runOAMDMA();
-						}
-						runTimer();
-						
-					}	
-					getchar(); //Read in the return
-				} else if(cmdChar == 'p'){
-					
-					printPermissionTable("permission.txt");
-					
-					getchar();
-				} else if(cmdChar == 'l'){
-					printPCRecall(PCRecallHead,-1);
-					
-					getchar();
-				} else {
-					if(runCPUCycle()!=0){
-						break;
-					}
-					if(isOAMDMAActive()==1){
-						runOAMDMA();
-					}
-					runTimer();
-				}	
-			} else {
-				runCPUCycle();
-				//Don't run PCRecallAdd here because of DelayCyclesLeft
-			}	
-		#else
-			if(runCPUCycle()==0x10){
-				printf("Stop Encoutered at PC: 0x%hX\n",getPC());
-				break;
-			}
-		#endif
-		
-		updateVideo(screenRefreshCount);
-		screenRefreshCount++;
-		if(screenRefreshCount==70224){
-			screenRefreshCount=0;
-			dumpMemToFile(argv[2]);
-		}
-
-		if(isOAMDMAActive()==1){
-			runOAMDMA();
-		}
-		
-		runTimer();
-		joypadUpdate();
-		
-		
-		if(framesElapsed == 10000000){
-			framesElapsed = 0;
-			currTime = clock();
-			
-			fps = 10000000./((currTime-prevTime)/CLOCKS_PER_SEC);
-			printf("Current speed: %fMz\n",fps/1000000.);
-			
-			prevTime = currTime;
-			
-			
-		} else {
-			framesElapsed++;
-		}*/
-		
-		//printf("Current Value in 0xFF80: %hhX\n",readCharFromMem(0xFF80));
-		
-		//sync++;
-		
-		/*if(sync%10000000==0){
-			if(prevTime==currTime){
-				printf("No Change!!!\n");
-			} else {
-				prevTime=currTime;
-				currTime = (int)clock();
-				//printf("Ticks: %d\n",currTime-prevTime);
-				printf("Running at %.3fMHz cycle per second\n",((10000000.)/((float)(currTime-prevTime)/(float)CLOCKS_PER_SEC))/(1000000.));
-			}
-			sync=0;
-		}*/
-			
-
 	}
 	
 	if(argc > 2){
@@ -838,11 +693,8 @@ int main(int argc,char** argv){
 		}		
 	}
 	
-	//dummyFunct();
-	
-	//free(gbcMainMem);
-	
-	
+   printf("Exiting\n");
+   fflush(stdout);
 	
 	return 0;
 }
@@ -930,6 +782,7 @@ int runGameboy(void *args){
 			//printf("Debug Workbank: %X\n",workBanks[0x1E5C]);
 			
 		}
+      //printf("Mem at 0xFFA6: %hhX\n", readCharFromMem(0xFFA6));
 	}
 	printf("Gameboy Stopped at PC: %hX\n",getPC());
 	
