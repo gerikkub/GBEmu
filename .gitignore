@@ -3,5 +3,6 @@
 *.exe
 *.o
 *~
-*.o
 *.bin
+.fuse_hidden*
+*.swp
