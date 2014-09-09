@@ -631,7 +631,6 @@ int spriteBufferFill(void *arguments){
 				for(j=0;j<160;j++){
 					backSpriteBuffer[j][i] = basePalette[4];
 					frontSpriteBuffer[j][i] = basePalette[4];
-               printf("%X\n", basePalette[4]);
 				}
 			}
 			
