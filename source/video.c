@@ -286,9 +286,10 @@ void updateVideo(int screenRefreshCount){
 		SDL_SemPost(drawVideoStartSem);
 		setLCDStatus((getLCDStatus()&0xFC)|LCD_STATUS_MODE1);
 		setLY(getLY() + 1);
+		setInterrupt(INT_VBLANK);	
 		
 		if(getLCDStatus()&LCD_STATUS_V_BLANK_INT){
-			setInterrupt(INT_VBLANK);	
+			setInterrupt(INT_LCD);	
 		}	
 		
 		if(getLY()==getLYC()){	//If LY and LYC are equal

@@ -15,6 +15,7 @@
 #include "joypad.h"
 #include "timer.h"
 #include "instruction_count.h"
+#include "debug.h"
 
 #define NO_STDIO_REDIRECT	1
 
@@ -654,6 +655,7 @@ int main(int argc,char** argv){
 	
 	
 	writePC(0x100);
+   writeSP(0xFFFE);
 	
 	clearFlagZ();
 	clearFlagN();
@@ -671,14 +673,11 @@ int main(int argc,char** argv){
 	//while(timerReady == 0);
 	
 	SDL_Thread *runGameboyThread = SDL_CreateThread(runGameboy, "gameboy", argv);
+   //SDL_Thread *runGameboyThread = SDL_CreateThread(debugGameboy, "gameboy", argv);
 	if(runGameboyThread == NULL){
 		printf("Unable to create Gameboy Thread. Exiting!!!\n");
 	}
 
-   //drawVideoFromMain();
-   //SDL_Delay(5000);
-   //return 0;
-	
 	while(1){
 	
 		joypadUpdate();
@@ -782,7 +781,9 @@ int runGameboy(void *args){
 			//printf("Debug Workbank: %X\n",workBanks[0x1E5C]);
 			
 		}
-      //printf("Mem at 0xFFA6: %hhX\n", readCharFromMem(0xFFA6));
+      if(screenRefreshCount == 0) {
+         //printf("Mem at FFFA: %hhX\n", readCharFromMem(0xFFFA));
+      }
 	}
 	printf("Gameboy Stopped at PC: %hX\n",getPC());
 	
@@ -840,9 +841,6 @@ int runGameboyWithCondition(int screenRefreshCount,int condition){
 	}
 	return 0;
 }
-	
-//void runGameboyWithDebug(){
-	
 	
 void dumpRegToFile(char* filename){
 	FILE* regDump = fopen(filename, "wb");

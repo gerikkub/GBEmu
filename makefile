@@ -7,7 +7,7 @@ CFLAGS := -g -fvisibility=hidden -Wpointer-arith -Winit-self\
  -Wno-unused-function -fdiagnostics-color=always
 LINUX := 1
 OBJECTS := $(BUILDPREFIX)instruction_count.o $(BUILDPREFIX)timer.o $(BUILDPREFIX)joypad.o $(BUILDPREFIX)dma.o $(BUILDPREFIX)video.o $(BUILDPREFIX)mem.o $(BUILDPREFIX)core.o $(BUILDPREFIX)instructions.o \
-		$(BUILDPREFIX)io.o $(BUILDPREFIX)main.o
+		$(BUILDPREFIX)io.o $(BUILDPREFIX)main.o $(BUILDPREFIX)debug.o
 
 
 all: $(TARGET) $(BUILD)

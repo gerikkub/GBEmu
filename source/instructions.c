@@ -839,7 +839,7 @@ INSTLDTOMEM(75,L)
 INSTLDTOMEM(77,A)
 
 void instruction76(){
-	//STOP SHOULD NEVER BE RUN
+   writePC(getPC() + 1);
 	return;
 }
 

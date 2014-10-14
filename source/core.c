@@ -232,7 +232,7 @@ int runCPUCycle(){
 	}
 	
 	//Check for Interrupts
-	if(IME == 1){
+	if(IME == 1) {
 		currentInterrupts = getinterruptFlags()&interruptER;
 		if(currentInterrupts&INT_VBLANK){
 			writeSP(getSP()-2);

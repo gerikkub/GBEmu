@@ -2,6 +2,9 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <unistd.h>
+#include <signal.h>
+
 #include <SDL2/SDL.h>
 
 #include "main.h"
@@ -19,6 +22,7 @@
 #define CMD_BREAK 5
 #define CMD_REMOVE_BREAK 6
 #define CMD_BREAK_VBLANK 7
+#define CMD_WALK 8
 
 
 #define CMD_VIEW_REG 10
@@ -33,6 +37,21 @@ typedef struct {
 	int cmd;
 } cmdCmp;
 
+static volatile int sigint = 0;
+
+void sigHandler(int sig) {
+   sigint = 1;
+}
+
+void updateScreenRefresh(int *refreshCount) {
+
+   (*refreshCount)++;
+   if(*refreshCount == 70224) {
+      *refreshCount = 0;
+   }
+}
+   
+
 int strcmp2(char *src, char *cmp1, char *cmp2){
 	return !strcmp(src,cmp1) || !strcmp(src,cmp2);
 }
@@ -41,9 +60,10 @@ int getCommand(char *cmdBuffer){
 
 	cmdCmp compare[] =
 		{{"step","s",CMD_STEP},
+      {"walk","w",CMD_WALK},
 		{"continue","c",CMD_CONTINUE},
 		{"stepOver","o",CMD_STEP_OVER},
-		{"stepOut","w",CMD_STEP_OUT},
+		{"stepOut","u",CMD_STEP_OUT},
 		{"viewReg","r",CMD_VIEW_REG},
 		{"memShort","ms",CMD_VIEW_MEM_SHORT},
 		{"memChar","mc",CMD_VIEW_MEM_CHAR},
@@ -108,11 +128,14 @@ int debugGameboy(void *argv){
 	int tempMem;
 	int quit = 0;
 	int stop = 0;
+   int stepCount;
 	int startPC;
 	int *quitProg;
 
 	memset(cmdBuffer,0,CMD_BUFFER_LEN);
 	memset(breakAddrs,-1,NUM_BREAK_ADDRS);
+
+   signal(SIGINT, sigHandler);
 
 	SDL_Delay(500);
 
@@ -133,6 +156,23 @@ int debugGameboy(void *argv){
 				updateScreenRefresh(&screenRefreshCount);
 			}
 			break;
+      case CMD_WALK:
+         cmdString = strtok(NULL, " \n");
+         if(cmdString != NULL) {
+            sscanf(cmdString, "%d", &stepCount);
+         } else {
+            break;
+         }
+         while(!stop && (stepCount != 0)) {
+            if(0x10 == runGameboyCycle(screenRefreshCount))
+               stop = 1;
+            updateScreenRefresh(&screenRefreshCount);
+            if(checkForBreak(breakAddrs)) {
+               break;
+            }
+            stepCount--;
+         }
+         break;
 		case CMD_CONTINUE:
 			startPC = getPC();
 			while(!stop && getPC() == startPC){
@@ -141,7 +181,8 @@ int debugGameboy(void *argv){
 				updateScreenRefresh(&screenRefreshCount);
 			}
 
-			while(!stop){
+         sigint = 0;
+			while(!stop && !sigint){
 				if(0x10 == runGameboyCycle(screenRefreshCount))
 					stop = 1;
 				updateScreenRefresh(&screenRefreshCount);
@@ -152,14 +193,14 @@ int debugGameboy(void *argv){
 			break;
 		case CMD_BREAK:
 			cmdString = strtok(NULL, " \n");
-			if(tempBreak){
+			if(cmdString){
 				sscanf(cmdString, "%hX", &tempBreak);
 				addBreakAddr(breakAddrs, tempBreak);
 			}
 			break;
 		case CMD_REMOVE_BREAK:
 			cmdString = strtok(NULL, " \n");
-			if(tempBreak){
+			if(cmdString){
 				sscanf(cmdString, "%hX", &tempBreak);
 				removeBreakAddr(breakAddrs, tempBreak);
 			}
@@ -168,18 +209,18 @@ int debugGameboy(void *argv){
 			addBreakAddr(breakAddrs, 0x40);
 			break;
 		case CMD_VIEW_REG:
-			printf("AF: 0x%hX A: 0x%hhX F: 0x%hhX\nBC: 0x%hX B: 0x%hhX C: 0x%hhX\nDE: 0x%hX D: 0x%hhX E: 0x%hhX\nHL: 0x%hX H: 0x%hhX L: 0x%hhX\nSP: 0x%hX PC: 0x%hX\nZ: %i N: %i H: %i C: %i\nIME: %i\n",getAF(),getA()&0xFF,getF()&0xFF,getBC(),getB()&0xFF,getC()&0xFF,getDE(),getD()&0xFF,getE()&0xFF,getHL(),getH()&0xFF,getL()&0xFF,getSP(),getPC(),getFlagZ(),getFlagN(),getFlagH(),getFlagC(),IME);
+			printf("AF: 0x%04hX A: 0x%02hhX F: 0x%02hhX\nBC: 0x%04hX B: 0x%02hhX C: 0x%02hhX\nDE: 0x%04hX D: 0x%02hhX E: 0x%02hhX\nHL: 0x%04hX H: 0x%02hhX L: 0x%02hhX\nSP: 0x%04hX PC: 0x%04hX\nZ: %i N: %i H: %i C: %i\nIME: %i\n",getAF(),getA()&0xFF,getF()&0xFF,getBC(),getB()&0xFF,getC()&0xFF,getDE(),getD()&0xFF,getE()&0xFF,getHL(),getH()&0xFF,getL()&0xFF,getSP(),getPC(),getFlagZ(),getFlagN(),getFlagH(),getFlagC(),IME);
 			break;
 		case CMD_VIEW_MEM_SHORT:
 			cmdString = strtok(NULL, " \n");
-			if(tempMem){
+			if(cmdString){
 				sscanf(cmdString, "%hX", &tempMem);
 				printf("0x%hX\n", readShortFromMem(tempMem));
 			}
 			break;
 		case CMD_VIEW_MEM_CHAR:
 			cmdString = strtok(NULL, " \n");
-			if(tempMem){
+			if(cmdString){
 				sscanf(cmdString, "%hX", &tempMem);
 				printf("0x%hhX\n", readShortFromMem(tempMem));
 			}
@@ -196,6 +237,7 @@ int debugGameboy(void *argv){
 
 	quitProg = (int*)argv;
 	*quitProg = 1;
+   _exit(0);
 	return 0;
 
 }

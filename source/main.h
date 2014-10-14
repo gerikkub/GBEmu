@@ -47,6 +47,7 @@ void dumpMemToFile(char* filename);
 void dumpRegToFile(char* filename);
 
 int runCPUCycle();
+int rungGameboyCycle();
 
 void PCRecallAdd(PCRecall** first,short pc);
 PCRecall* getPCRecall(PCRecall** first,int index);
