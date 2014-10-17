@@ -782,7 +782,7 @@ int runGameboy(void *args){
 			
 		}
       if(screenRefreshCount == 0) {
-         //printf("Mem at FFFA: %hhX\n", readCharFromMem(0xFFFA));
+         //printf("Mem at DB80: %hhX\n", readCharFromMem(0xDB80));
       }
 	}
 	printf("Gameboy Stopped at PC: %hX\n",getPC());

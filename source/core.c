@@ -21,6 +21,8 @@ int IME = 0;	//Interrupt Mase Enable Flag
 unsigned char* registerList;
 int delayCyclesLeft=0;
 
+int halted = 0;
+
 opcodeInstruction* opcodes;
 
 void setInterrupt(char a){
@@ -240,69 +242,74 @@ int runCPUCycle(){
 			writePC(0x40);
 			IME = 0;
 			clearInterrupt(INT_VBLANK);
+         halted = 0;
 		} else if(currentInterrupts&INT_LCD){
 			writeSP(getSP()-2);
 			writeShortToMem(getSP(),getPC());
 			writePC(0x48);
 			IME = 0;
 			clearInterrupt(INT_LCD);
+         halted = 0;
 		} else if(currentInterrupts&INT_TIMER){
 			writeSP(getSP()-2);
 			writeShortToMem(getSP(),getPC());
 			writePC(0x50);
 			IME = 0;
 			clearInterrupt(INT_TIMER);
+         halted = 0;
 		} else if(currentInterrupts&INT_SERIAL){
 			writeSP(getSP()-2);
 			writeShortToMem(getSP(),getPC());
 			writePC(0x58);
 			IME = 0;
 			clearInterrupt(INT_SERIAL);
+         halted = 0;
 		} else if(currentInterrupts&INT_JOYPAD){
 			writeSP(getSP()-2);
 			writeShortToMem(getSP(),getPC());
 			writePC(0x60);
 			IME = 0;
 			clearInterrupt(INT_JOYPAD);
+         halted = 0;
 		}
 	}	
 	
-	
-	delayCyclesLeft = instructionClockCycles[readCharFromMem(getPC())];	//Will be overwritten is instruction is CB
-	if(delayCyclesLeft == -1){
-		delayCyclesLeft = 20;	//My not need any actual implementation
-	}
-	
-	//Add the instruction to the list of called instructions
-	PCRecallAdd(PCRecallHead,getPC());
+   if(!halted) {	
+	   delayCyclesLeft = instructionClockCycles[readCharFromMem(getPC())];	//Will be overwritten is instruction is CB
+	   if(delayCyclesLeft == -1){
+		   delayCyclesLeft = 20;	//My not need any actual implementation
+	   }
+	   
+	   //Add the instruction to the list of called instructions
+	   PCRecallAdd(PCRecallHead,getPC());
 
-	//Get the instruction from the jump table
-	if((readCharFromMem(getPC())&0xFF)==0xCB){
-		instruction = opcodes[readCharFromMem(getPC()+1)+0x100];
-		writePC(getPC()+1);
+	   //Get the instruction from the jump table
+	   if((readCharFromMem(getPC())&0xFF)==0xCB){
+		   instruction = opcodes[readCharFromMem(getPC()+1)+0x100];
+		   writePC(getPC()+1);
 
-		incrementInstructionCount(readCharFromMem(getPC())+0x100);
+		   incrementInstructionCount(readCharFromMem(getPC())+0x100);
 
-		delayCyclesLeft = CBInstructionClockCycles[readCharFromMem(getPC())];
-		//printf("Using CB instruction at PC: %hX\n",getPC());
-	} else {
-		if((readCharFromMem(getPC())&0xFF)==0x10){
-			return 0x10;
-		}
-		//printf("Instruction Index: %hhX PC: %hX\n",readCharFromMem(getPC()),getPC());
+		   delayCyclesLeft = CBInstructionClockCycles[readCharFromMem(getPC())];
+	   } else {
+		   if((readCharFromMem(getPC())&0xFF)==0x10){
+			   return 0x10;
+		   } else if((readCharFromMem(getPC())&0xFF) == 0x76) {
+            halted = 1;
+         }
+		   incrementInstructionCount(readCharFromMem(getPC()));
 
-		incrementInstructionCount(readCharFromMem(getPC()));
-
-		instruction = opcodes[readCharFromMem(getPC())];
-	}
-	//Call the instruction
-	if(instruction!=0){
-		instruction();
-	} else {
-		printf("Unknown Instruction: %hhX at PC: %hhX\n",readCharFromMem(getPC()),getPC());
-		return 0x10;	//Stop
-		writePC(getPC()+1);
-	}	
+		   instruction = opcodes[readCharFromMem(getPC())];
+	   }
+	   //Call the instruction
+	   if(instruction!=0){
+		   instruction();
+	   } else {
+		   printf("Unknown Instruction: %hhX at PC: %hhX\n",readCharFromMem(getPC()),getPC());
+		   return 0x10;	//Stop
+		   writePC(getPC()+1);
+	   }
+   }
 	
 	return 0;
 }	

@@ -76,7 +76,7 @@ void memBankMBC1(int loc,char value){
 		//printf("Enabling RAM\n");
 		RAMEnabled = value;
 	} else if(loc<0x4000){
-		//printf("Changing rom bank\n");
+		//printf("Changing rom bank to %hhX at PC: %hX\n", value, getPC());
 		if((value&0x1F)==0){
 			value++;
 		}
@@ -256,7 +256,7 @@ void writeCharToMem(int loc,char value){
 	
 	if(loc<0xA000&&loc>=0x8000){	//VRam
 		vramBanks[(loc-0x8000)+0x2000*currentVramBank] = value;
-	} else if(loc<0xC000){	//Other Memcontroller stuff
+	} else if(loc<0x8000){	//Other Memcontroller stuff
 		//Call MEMcontroller Stuff
 		
 		switch(mbcType){
@@ -277,6 +277,8 @@ void writeCharToMem(int loc,char value){
 				break;
 		}
 		//memBankWrite(loc,value);
+   } else if(loc<0xC000){
+      ramBanks[(loc-0xA000) + 0x2000*currentRamBank] = value;
 	} else if(loc<0xD000){
 		workBanks[(loc-0xC000)] = value;
 	} else if(loc<0xE000){

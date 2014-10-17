@@ -1099,6 +1099,9 @@ void instructionE0(){
 
 //LDH A,(a8)
 void instructionF0(){
+   if((readCharFromMem(getPC() + 1) & 0xFF) == 0xCC) {
+      //printf("Reading joypad at PC: %hX\n", getPC());
+   }
 	writeA(readCharFromMem(readCharFromMem(getPC()+1)+0xFF00));
 	writePC(getPC()+2);
 }	
