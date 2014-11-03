@@ -10,7 +10,7 @@
 #include "joypad.h"
 
 int OAMDMAActive = 0;
-int currentAddress;
+int DMACurrentAddress;
 
 int isOAMDMAActive(){
 	return OAMDMAActive;
@@ -20,17 +20,17 @@ void runOAMDMA(){
 	/*if(readCharFromMem(currentAddress&0xFFFF)!=0){
 		printf("trying to write: 0x%hhX\t\t",readCharFromMem(currentAddress&0xFFFF));
 	}*/
-	OAMTable[currentAddress&0xFF] = readCharFromMem(currentAddress&0xFFFF);
+	OAMTable[DMACurrentAddress&0xFF] = readCharFromMem(DMACurrentAddress&0xFFFF);
 	/*if(readCharFromMem(currentAddress&0xFFFF)!=0){
 		printf("Wrote: 0x%hhX\n",OAMTable[currentAddress&0xFF]);
 	}*/
-	currentAddress++;
-	if((currentAddress&0xFF)==0xA0){
+	DMACurrentAddress++;
+	if((DMACurrentAddress&0xFF)==0xA0){
 		OAMDMAActive = 0;
 	}
 }
 
 void startOAMDMA(char value){
-	currentAddress = value<<8;
+	DMACurrentAddress = value<<8;
 	OAMDMAActive = 1;
 }

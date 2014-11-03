@@ -13,6 +13,7 @@
 #include "video.h"
 #include "joypad.h"
 #include "instruction_count.h"
+#include "dump.h"
 
 #include <SDL2/SDL.h>
 
@@ -26,6 +27,8 @@
 #define GAMEBOY_BTTN_DOWN	SDLK_DOWN
 #define GAMEBOY_BTTN_LEFT	SDLK_LEFT
 #define GAMEBOY_BTTN_RIGHT	SDLK_RIGHT
+
+#define SAVE_BTTN SDLK_s
 
 SDL_Thread *joypadThread;
 int buttonMatrix;	//Lower 8 bits are Buttons, Upper 8 bits are directions
@@ -82,6 +85,8 @@ void joypadUpdate(){
 			case GAMEBOY_BTTN_DOWN:
 				buttonMatrix &= ~BIT(7);
 				break;
+         case SAVE_BTTN:
+            dumpState("gameState");
 			//Debugging case!!!!!!
 			case SDLK_TAB:
 				shouldDumpState= 1;

@@ -16,6 +16,7 @@
 #include "timer.h"
 #include "instruction_count.h"
 #include "debug.h"
+#include "dump.h"
 
 #define NO_STDIO_REDIRECT	1
 
@@ -50,8 +51,6 @@ void dumpRegToFile(char* filename);
 void printPermissionTable(char* filename);
 
 void signal_INT_callback(int signum);
-
-unsigned int screenRefreshCount=0;	
 
 void PCRecallTest();
 
@@ -671,6 +670,10 @@ int main(int argc,char** argv){
 	
 	//printf("scrollX init: 0x%p\n",scrollX);
 	//while(timerReady == 0);
+
+   if(argv[2] != NULL) {
+      readState(argv[2]);
+   }
 	
 	SDL_Thread *runGameboyThread = SDL_CreateThread(runGameboy, "gameboy", argv);
    //SDL_Thread *runGameboyThread = SDL_CreateThread(debugGameboy, "gameboy", argv);
@@ -737,12 +740,12 @@ void dumpMemToFile(char* filename){
 	return;	
 }
 
-int runGameboyCycle(int screenRefreshCount){
+int runGameboyCycle(){
 	//Everything neccesary for one cycle of gameboy
 	int returnValue;
 	returnValue = runCPUCycle();
 	
-	updateVideo(screenRefreshCount);
+	updateVideo();
 
 	if(isOAMDMAActive()==1){
 		runOAMDMA();
@@ -754,7 +757,6 @@ int runGameboyCycle(int screenRefreshCount){
 }
 
 int runGameboy(void *args){
-	int screenRefreshCount = 0;
 
 	printf("Starting Gameboy Thread\n");
 
@@ -764,8 +766,8 @@ int runGameboy(void *args){
 
 	writeA(0);
 
-	while(runGameboyCycle(screenRefreshCount)!=0x10){
-		screenRefreshCount++;
+	while(runGameboyCycle()!=0x10){
+		/*screenRefreshCount++;
 		if(screenRefreshCount==70224){
 			screenRefreshCount=0;
 			
@@ -776,14 +778,14 @@ int runGameboy(void *args){
 				SDL_Delay(((unsigned int)((1./(float)MAX_HZ)*70224.*1000000.) - (currTime-prevTime))/1000);
 			}
 			prevTime = currTime;
-
+         */
 			/** DEBUG **/
 			//printf("Debug Workbank: %X\n",workBanks[0x1E5C]);
 			
-		}
+		/*}
       if(screenRefreshCount == 0) {
          //printf("Mem at DB80: %hhX\n", readCharFromMem(0xDB80));
-      }
+      }*/
 	}
 	printf("Gameboy Stopped at PC: %hX\n",getPC());
 	

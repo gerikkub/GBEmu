@@ -61,6 +61,10 @@ int currentVramBank = 0;
 int currentRamBank = 0;
 int currentWorkBank = 1;
 
+int numROMBanks = 0;
+int numRAMBanks = 0;
+int numWRAMBanks = 0;
+
 char RAMEnabled = 0;	
 char ROMRAMMode = 0;	//used by MBC1 for access to more ROM/RAM
 
@@ -236,6 +240,7 @@ void initMem(int numMemBanks,int ramSize,char cartType){
 		mbcType = 1;
 	} else if(cartType == CART_TYPE_MBC2||cartType == CART_TYPE_MBC2_BAT){
 		mbcType = 2;
+      ramBanks = calloc(512, 1);
 	} else if(cartType >= CART_TYPE_MBC3_TIME_BAT && cartType <= CART_TYPE_MBC3_RAM_BAT){
 		mbcType = 3;
 	} else {
@@ -353,13 +358,6 @@ unsigned short readShortFromMem(int loc){
 unsigned short changeEndian(short num){
 	return ((num&0xFF)<<8)|((num&0xFF00)>>8);
 }
-
-
-
-
-
-
-
 
 
 

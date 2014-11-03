@@ -82,6 +82,7 @@ int shouldRedraw = 0;		//Will be set when entire screen should be blitted to the
 int drawingComplete = 0;	//Will be set to 1 when a new line can be drawn
 int buffersFull = 0;		//Will be set to 1 when buffers are full and ready for drawing
 int spriteTableChanged = 1;	//Will be set to one when the list needs to be sorted
+unsigned int screenRefreshCount = 0;
 
 static SDL_Window* window;
 static SDL_Renderer* renderer;
@@ -223,7 +224,7 @@ unsigned char getColorForTile(tileData* tile,int row, int column){
 	return ((upperBit<<1)|lowerBit)&0x3;
 }
 	
-void updateVideo(int screenRefreshCount){
+void updateVideo(){
 	
 	int temp;
 	
@@ -310,7 +311,12 @@ void updateVideo(int screenRefreshCount){
 		} else {
 			setLCDStatus(getLCDStatus()& ~LCD_STATUS_LYC_LC_FLAG);
 		}
-	}	
+	}
+
+   screenRefreshCount++;
+   if(screenRefreshCount == 70224) {
+      screenRefreshCount = 0;
+   }
 }
 
 char hasAlpha(int pixel) {
@@ -362,7 +368,7 @@ void reverseTile(drawBuffer outputBuffer,int x,int y){
 		outputBuffer[x][y+i] = tempColor;
 		
 		tempColor = outputBuffer[x+6][y+i];
-		outputBuffer[x+6][y+i] = outputBuffer[x+1][y+1];
+		outputBuffer[x+6][y+i] = outputBuffer[x+1][y+i];
 		outputBuffer[x+1][y+i] = tempColor;
 		
 		tempColor = outputBuffer[x+5][y+i];
@@ -372,6 +378,8 @@ void reverseTile(drawBuffer outputBuffer,int x,int y){
 		tempColor = outputBuffer[x+4][y+i];
 		outputBuffer[x+4][y+i] = outputBuffer[x+3][y+i];
 		outputBuffer[x+3][y+i] = tempColor;
+
+      outputBuffer[x+7][y+1] = 2;
 	}
 	
 }
@@ -840,6 +848,7 @@ int drawVideo(void* args){
 
 	while(1){
 		SDL_SemWait(fillBuffersSem);
+
 	   SDL_SemPost(spriteStartSem);
 		SDL_SemPost(windowStartSem);
 		SDL_SemPost(backgroundStartSem);
@@ -875,15 +884,15 @@ int drawVideo(void* args){
 
       SDL_SemPost(drawOnMainThreadSem);
          			
-		if(framesElapsed == 60){
+		if(framesElapsed == 1){
 			framesElapsed = 0;
 			currTime = SDL_GetTicks();
 			
-			if((currTime-prevTime)<1000){	//Updating more than 60 times per second
-				printf("Delaying fps\n");
-				SDL_Delay(1000-(currTime-prevTime));
+			if((currTime-prevTime)<(1000/60)){	//Updating more than 60 times per second
+				//printf("Delaying fps\n");
+				SDL_Delay(1000/60-(currTime-prevTime));
 			} else {
-				printf("fps: %f\n",60./((float)(currTime-prevTime)/1000.));
+				//printf("fps: %f\n",60./((float)(currTime-prevTime)/(1000./60)));
 			}
 			
 			prevTime = currTime;

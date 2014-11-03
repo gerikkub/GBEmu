@@ -15,6 +15,10 @@ extern int currentVramBank;
 extern int currentRamBank;
 extern int currentWorkBank;
 
+extern int numROMBanks;
+extern int numRAMBanks;
+extern int numWRAMBanks; 
+
 void initMem(int numMemBanks,int ramSize,char cartType);
 
 int writeCharToMem(int loc,char value);

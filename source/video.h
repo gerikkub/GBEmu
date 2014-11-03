@@ -6,7 +6,7 @@
 int spriteTableChanged;
 
 void initVideo();
-void updateVideo(int screenRefreshCount);
+void updateVideo();
 void drawVideoFromMain();
 
 //void testLinkedList();

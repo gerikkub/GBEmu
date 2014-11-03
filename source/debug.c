@@ -30,6 +30,7 @@
 #define CMD_VIEW_MEM_SHORT 12
 #define CMD_VIEW_MEM_RANGE 13
 
+#define CMD_HELP 99
 #define CMD_QUIT 100
 
 typedef struct {
@@ -39,26 +40,7 @@ typedef struct {
 
 static volatile int sigint = 0;
 
-void sigHandler(int sig) {
-   sigint = 1;
-}
-
-void updateScreenRefresh(int *refreshCount) {
-
-   (*refreshCount)++;
-   if(*refreshCount == 70224) {
-      *refreshCount = 0;
-   }
-}
-   
-
-int strcmp2(char *src, char *cmp1, char *cmp2){
-	return !strcmp(src,cmp1) || !strcmp(src,cmp2);
-}
-
-int getCommand(char *cmdBuffer){
-
-	cmdCmp compare[] =
+static cmdCmp compare[] =
 		{{"step","s",CMD_STEP},
       {"walk","w",CMD_WALK},
 		{"continue","c",CMD_CONTINUE},
@@ -70,9 +52,21 @@ int getCommand(char *cmdBuffer){
 		{"break","b",CMD_BREAK},
 		{"unbreak","rb",CMD_REMOVE_BREAK},
 		{"vblank","bv",CMD_BREAK_VBLANK},
+      {"help","h",CMD_HELP},
 		{"quit","q",CMD_QUIT},
 		{"","",0}};
 
+void sigHandler(int sig) {
+   sigint = 1;
+}
+
+int strcmp2(char *src, char *cmp1, char *cmp2){
+	return !strcmp(src,cmp1) || !strcmp(src,cmp2);
+}
+
+int getCommand(char *cmdBuffer){
+
+	
 	int ndx;
 	for(ndx = 0; compare[ndx].cmd; ndx++){
 		if(strcmp2(cmdBuffer,compare[ndx].str1,compare[ndx].str2))
@@ -119,7 +113,6 @@ void removeBreakAddr(int *breakAddrs, int removeAddr){
 
 int debugGameboy(void *argv){
 	
-	int screenRefreshCount = 0;
 	char cmdBuffer[CMD_BUFFER_LEN];
 	int breakAddrs[NUM_BREAK_ADDRS];
 	int ndx;
@@ -131,6 +124,8 @@ int debugGameboy(void *argv){
    int stepCount;
 	int startPC;
 	int *quitProg;
+   unsigned int currTime;
+   unsigned int prevTime = 0;
 
 	memset(cmdBuffer,0,CMD_BUFFER_LEN);
 	memset(breakAddrs,-1,NUM_BREAK_ADDRS);
@@ -151,9 +146,8 @@ int debugGameboy(void *argv){
 		case CMD_STEP:
 			startPC = getPC();
 			while(!stop && getPC() == startPC){
-				if(0x10 == runGameboyCycle(screenRefreshCount))
+				if(0x10 == runGameboyCycle())
 					stop = 1;
-				updateScreenRefresh(&screenRefreshCount);
 			}
 			break;
       case CMD_WALK:
@@ -164,28 +158,28 @@ int debugGameboy(void *argv){
             break;
          }
          while(!stop && (stepCount != 0)) {
-            if(0x10 == runGameboyCycle(screenRefreshCount))
+            if(0x10 == runGameboyCycle())
                stop = 1;
-            updateScreenRefresh(&screenRefreshCount);
             if(checkForBreak(breakAddrs)) {
                break;
             }
             stepCount--;
+
+            currTime = SDL_GetTicks();
+            //if((currTime-prevTime) < (unsigned int)(1./(float)CPU_SPEED_HZ) * CLICKS_PER_REFRESH
          }
          break;
 		case CMD_CONTINUE:
 			startPC = getPC();
-			while(!stop && getPC() == startPC){
-				if(0x10 == runGameboyCycle(screenRefreshCount))
+         sigint = 0;
+			while(!stop && (getPC() == startPC) && !sigint){
+				if(0x10 == runGameboyCycle())
 					stop = 1;
-				updateScreenRefresh(&screenRefreshCount);
 			}
 
-         sigint = 0;
 			while(!stop && !sigint){
-				if(0x10 == runGameboyCycle(screenRefreshCount))
+				if(0x10 == runGameboyCycle())
 					stop = 1;
-				updateScreenRefresh(&screenRefreshCount);
 				if(checkForBreak(breakAddrs)){
 					break;
 				}
@@ -225,6 +219,11 @@ int debugGameboy(void *argv){
 				printf("0x%hhX\n", readShortFromMem(tempMem));
 			}
 			break;
+      case CMD_HELP:
+         for(ndx = 0; compare[ndx].cmd; ndx++){
+            printf("%s %s\n", compare[ndx].str1, compare[ndx].str2);
+	      }
+         break;
 		case CMD_QUIT:
 			quit = 1;
 
