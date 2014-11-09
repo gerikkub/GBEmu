@@ -111,11 +111,6 @@ typedef struct tileData_t {
 	tileLine lines[8];
 }__attribute__((packed)) tileData;
 
-typedef struct SpriteList_t {
-	int spriteNum;
-	struct SpriteList_t* next;
-} SpriteList;
-
 typedef struct OAMEntry_t {
 	unsigned char Y;
 	unsigned char X;
@@ -123,97 +118,6 @@ typedef struct OAMEntry_t {
 	unsigned char flags;
 }__attribute__((packed)) OAMEntry;
 
-SpriteList* firstSprite;
-
-void spriteListInsert(SpriteList** first,SpriteList* insertPoint,int spriteNum){
-	
-	if(insertPoint == NULL){
-		return;
-	}
-	
-	SpriteList *newElement = (SpriteList*)malloc(sizeof(newElement));
-	if(newElement == NULL){
-		printf("Couldn't Allocate room for new Sprite!!!\n");
-		exit(1);
-	}
-	SpriteList *searchElement = *first;
-	
-	newElement->spriteNum = spriteNum;
-	if(insertPoint==*first){
-		newElement->next = *first;
-		*first = newElement;
-	} else {	
-		while(searchElement->next != insertPoint){
-			searchElement = searchElement->next;
-			if(searchElement == NULL){
-				return;
-			}
-		}
-		newElement->next = insertPoint;
-		searchElement->next = newElement;
-	}
-}
-
-void spriteListDelete(SpriteList** first,SpriteList* deletePoint){
-	if(*first == deletePoint){
-		SpriteList* tempSprite;
-		tempSprite = *first;
-		*first = tempSprite->next;
-		free(tempSprite);
-		return;
-	}
-	
-	SpriteList* searchElement = *first;
-	
-	while(searchElement->next != deletePoint){
-		searchElement = searchElement->next;
-		if(searchElement==NULL){
-			return;
-		}
-	}
-	searchElement->next = deletePoint->next;
-	free(deletePoint);
-}
-	
-SpriteList* getSpriteElement(SpriteList** first,int data){
-	SpriteList *search = *first;
-	while((search!=NULL)&&(search->spriteNum!=data)){
-		search = search->next;
-	}
-	return search;
-}
-
-void spriteListSort(SpriteList** first,SpriteList* last){
-	if(*first == NULL){
-		return;
-	}
-
-	if(((*first)->next == last)||((*first) == last)){
-		return;
-	}	
-	
-	OAMEntry* OAMTableEntries = (OAMEntry*)OAMTable;
-	
-	SpriteList *pivot = *first;
-	SpriteList *currSprite = pivot->next;
-	SpriteList *tempSprite;
-	int pivotNum = OAMTableEntries[pivot->spriteNum].X;
-	
-	while(currSprite!=last){
-		if(OAMTableEntries[currSprite->spriteNum].X<pivotNum){
-			spriteListInsert(first,pivot,OAMTableEntries[currSprite->spriteNum].X);
-			tempSprite = currSprite;
-			currSprite = currSprite->next;
-			spriteListDelete(first,tempSprite);
-		} else {
-			currSprite = currSprite->next;
-		}
-	}
-
-	spriteListSort(first,pivot);
-	spriteListSort(&pivot->next,last);
-}	
-	
 unsigned char getColorForTile(tileData* tile,int row, int column){
 	tileLine readLine = tile->lines[row];
 	char upperBit = readLine.highBits >> (7-column);
@@ -351,47 +255,173 @@ void drawBGTileToBuffer(unsigned int tileNum,drawBuffer outputBuffer,int x,int y
 	}
 }	
 
-void reverseTile(drawBuffer outputBuffer,int x,int y){
+void drawSpriteTileToBuffer8x8(unsigned int tileNum,int outputBuffer[8][16],int palette[4]){
+	
+	tileData* currTile = (tileData*)&vramBanks[tileNum*sizeof(tileData)];
+	
+	int tileRow,tileColumn;
+	
+	for(tileRow=0;tileRow<8;tileRow++){
+		for(tileColumn=0;tileColumn<8;tileColumn++){
+         if(getColorForTile(currTile, tileRow, tileColumn) != 0) {
+		      outputBuffer[tileColumn][tileRow] = palette[getColorForTile(currTile, tileRow, tileColumn)];
+         }
+		}
+	}
+}
+
+void drawSpriteTileToBuffer8x16(unsigned int tileNum,int outputBuffer[8][16],int palette[4]){
+
+	tileData* currTile = (tileData*)&vramBanks[(tileNum&0xFE)*sizeof(tileData)];
+
+	int tileRow,tileColumn;
+	
+	for(tileRow=0;tileRow<16;tileRow++){
+		for(tileColumn=0;tileColumn<8;tileColumn++){
+         if(getColorForTile(currTile, tileRow, tileColumn) != 0) {
+		      outputBuffer[tileColumn][tileRow] = palette[getColorForTile(currTile, tileRow, tileColumn)];
+         }
+		}
+	}
+}
+
+void copySpriteToScreenBuffer8x8(drawBuffer outputBuffer, int spriteBuffer[8][16], int x, int y){
+
+   int tileRow, tileColumn;
+
+   if((x<=-8)||(x>160)){
+		return;
+	}
+	if((y<=-8)||(y>144)){
+		return;
+	}
+   for(tileRow=0;tileRow<8;tileRow++){
+		for(tileColumn=0;tileColumn<8;tileColumn++){
+			if((x+tileColumn>=0)&&(x+tileColumn<160)){
+				if((y+tileRow>=0)&&(y+tileRow<144)){
+               if(spriteBuffer[tileColumn][tileRow] != 0) {
+					   outputBuffer[x+tileColumn][y+tileRow] = spriteBuffer[tileColumn][tileRow];
+               }
+				}
+			}
+		}
+	}
+}
+
+void copySpriteToScreenBuffer8x16(drawBuffer outputBuffer, int spriteBuffer[8][16], int x, int y){
+
+   int tileRow, tileColumn;
+
+   for(tileRow=0;tileRow<16;tileRow++){
+		for(tileColumn=0;tileColumn<8;tileColumn++){
+			if((x+tileColumn>=0)&&(x+tileColumn<160)){
+				if((y+tileRow>=0)&&(y+tileRow<144)){
+               if(spriteBuffer[tileColumn][tileRow] != 0) {
+					   outputBuffer[x+tileColumn][y+tileRow] = spriteBuffer[tileColumn][tileRow];
+               }
+				}
+			}
+		}
+	}
+}
+
+void reverseTile8x8(int outputBuffer[8][16]){
 	
 	int tempColor;
 	int i;
 	
-	if(x<0){
-		return;
-	} else if(y<0){
-		return;
-	}
-	
 	for(i=0;i<8;i++){
-		tempColor = outputBuffer[x+7][y+i];
-		outputBuffer[x+7][y+i] = outputBuffer[x][y+i];
-		outputBuffer[x][y+i] = tempColor;
+		tempColor = outputBuffer[7][i];
+		outputBuffer[7][i] = outputBuffer[0][i];
+		outputBuffer[0][i] = tempColor;
 		
-		tempColor = outputBuffer[x+6][y+i];
-		outputBuffer[x+6][y+i] = outputBuffer[x+1][y+i];
-		outputBuffer[x+1][y+i] = tempColor;
+		tempColor = outputBuffer[6][i];
+		outputBuffer[6][i] = outputBuffer[1][i];
+		outputBuffer[1][i] = tempColor;
 		
-		tempColor = outputBuffer[x+5][y+i];
-		outputBuffer[x+5][y+i] = outputBuffer[x+2][y+i];
-		outputBuffer[x+2][y+i] = tempColor;
+		tempColor = outputBuffer[5][i];
+		outputBuffer[5][i] = outputBuffer[2][i];
+		outputBuffer[2][i] = tempColor;
 		
-		tempColor = outputBuffer[x+4][y+i];
-		outputBuffer[x+4][y+i] = outputBuffer[x+3][y+i];
-		outputBuffer[x+3][y+i] = tempColor;
-
-      outputBuffer[x+7][y+1] = 2;
+		tempColor = outputBuffer[4][i];
+		outputBuffer[4][i] = outputBuffer[3][i];
+		outputBuffer[3][i] = tempColor;
 	}
-	
 }
+
+void reverseTile8x16(int outputBuffer[8][16]){
+
+   int tempColor;
+	int i;
 	
-	
+	for(i=0;i<16;i++){
+		tempColor = outputBuffer[7][i];
+		outputBuffer[7][i] = outputBuffer[0][i];
+		outputBuffer[0][i] = tempColor;
+		
+		tempColor = outputBuffer[6][i];
+		outputBuffer[6][i] = outputBuffer[1][i];
+		outputBuffer[1][i] = tempColor;
+		
+		tempColor = outputBuffer[5][i];
+		outputBuffer[5][i] = outputBuffer[2][i];
+		outputBuffer[2][i] = tempColor;
+		
+		tempColor = outputBuffer[4][i];
+		outputBuffer[4][i] = outputBuffer[3][i];
+		outputBuffer[3][i] = tempColor;
+	}
+}
+
+void flipTile8x8(int outputBuffer[8][16]) {
+
+   int tempColor;
+   int i,j;
+
+   for(i=0;i<8;i++) {
+      for(j=0;j<4;j++) {
+         tempColor = outputBuffer[i][7-j];
+         outputBuffer[i][7-j] = outputBuffer[i][j];
+         outputBuffer[i][j] = tempColor;
+      }
+   }
+}
+
+void flipTile8x16(int outputBuffer[8][16]) {
+
+   int tempColor;
+   int i,j;
+
+   for(i=0;i<16;i++) {
+      for(j=0;j<8;j++) {
+         tempColor = outputBuffer[i][15-j];
+         outputBuffer[i][15-j] = outputBuffer[i][j];
+         outputBuffer[i][j] = tempColor;
+      }
+   }
+}
+
+int orderSprites(void* s1, void* s2) {
+   int sprite1 = *(int*)s1;
+   int sprite2 = *(int*)s2;
+  
+	OAMEntry *OAMTableEntry = (OAMEntry*)OAMTable;
+
+   if(OAMTableEntry[sprite1].X == OAMTableEntry[sprite2].X) {
+      return sprite1 > sprite2 ? -1 : 1;
+   } else {
+      return OAMTableEntry[sprite1].X > OAMTableEntry[sprite2].X ? -1: 1;
+   }
+
+}
+
+void fixSpritePriorities(int* spritePriorities) {
+   qsort(spritePriorities, 40, sizeof(int), (__compar_fn_t)orderSprites);
+}
 
 int backgroundBufferFill(void *arguments){
 	void** args = (void*)arguments;
 
-	char* backgroundBufferComplete = (char*)args[0];
-	char* beginFillingBackgroundBuffer = (char*)args[1];
-	
 	int i,j;
 	unsigned int currTile;
 	int tileOffsetX;
@@ -400,23 +430,14 @@ int backgroundBufferFill(void *arguments){
 	unsigned char *BGTileMap = NULL;
 	
 	int (*backgroundBuffer)[144] = args[2];
-	//drawBuffer backgroundBuffer;
-	//backgroundBuffer = args[2];
 
 	int* basePalette = (int*)args[3];
 	
 	int bgPalette[4];
 	
-	//char tilesBuffered[160][144];
-	
 	while(1){
-		//while(*beginFillingBackgroundBuffer == 0);
 		SDL_SemWait(backgroundStartSem);
-		//SDL_SemWait(backgroundSem);
-		*beginFillingBackgroundBuffer = 0;
-		*backgroundBufferComplete = 0;
 		
-		//memset(tilesBuffered,0,160*144);
 		memset(backgroundBuffer,0,160*144);
 		
 		if(getLCDControl()&LCD_CONTROL_BG_ENABLE){
@@ -472,7 +493,6 @@ int backgroundBufferFill(void *arguments){
 			}
 		}
 		
-		*backgroundBufferComplete = 1;
 		SDL_SemPost(backgroundEndSem);
 	}	
 	
@@ -482,10 +502,7 @@ int backgroundBufferFill(void *arguments){
 int windowBufferFill(void *arguments){
 	void** args = (void*)arguments;
 
-	char* windowBufferComplete = (char*)args[0];
-	char* beginFillingWindowBuffer = (char*)args[1];
 	int (*windowBuffer)[144] = args[2];
-	
 	
 	int* basePalette = (int*)args[3];
 	
@@ -499,8 +516,6 @@ int windowBufferFill(void *arguments){
 	
 	while(1){
 		SDL_SemWait(windowStartSem);
-		*beginFillingWindowBuffer = 0;
-		*windowBufferComplete = 0;
 
 		for(i=0;i<144;i++){
 			for(j=0;j<160;j++){
@@ -536,7 +551,6 @@ int windowBufferFill(void *arguments){
 			
 		}
 		
-		*windowBufferComplete = 1;
 		SDL_SemPost(windowEndSem);
 	}
 	
@@ -546,9 +560,6 @@ int windowBufferFill(void *arguments){
 int spriteBufferFill(void *arguments){
 	void** args = (void*)arguments;
 
-	char* backSpriteBufferComplete = (char*)args[0];
-	char* frontSpriteBufferComplete = (char*)args[1];
-	char* beginFillingSpriteBuffer = (char*)args[2];
 	int (*backSpriteBuffer)[144] = args[3];
 	int (*frontSpriteBuffer)[144] = args[4];
 	
@@ -561,36 +572,26 @@ int spriteBufferFill(void *arguments){
 	
 	int numSpritesPerLine[144];	//Holds the number of sprites per line. Max of 10
 	int i,j;
+   int spriteNum;
 	int tooManySprites;			//Should be a boolean type
 	unsigned char spriteY,spriteX;
 	char spriteTileNum,spriteFlags;
-	
-	SpriteList* firstSprite = NULL;
-	SpriteList* currSprite = NULL;	
-	
-	//Create an initial setup for the Sprite Linked List
-	firstSprite = (SpriteList*)malloc(sizeof(SpriteList));
-	currSprite = firstSprite;
-	for(i=0;i<39;i++){
-		currSprite->spriteNum = i;
-		currSprite->next = (SpriteList*)malloc(sizeof(SpriteList));
-		currSprite = currSprite->next;
-	}
-	currSprite->spriteNum = 39;
-	currSprite->next = NULL;
+   int spritePriorities[40];
+   int spriteDataBuffer[8][16];
+
+   for(i = 0; i < 40; i++) {
+      spritePriorities[i] = i;
+   }
 
    memset(backSpriteBuffer, 0x80, 144 * 160 * 4);
    memset(frontSpriteBuffer, 0x80, 144 * 160 * 4);
 	
 	while(1){
-		//while(*beginFillingSpriteBuffer == 0);
 		SDL_SemWait(spriteStartSem);
-		//SDL_SemWait(spriteSem);
-		*backSpriteBufferComplete = 0;
-		*frontSpriteBufferComplete = 0;
-		*beginFillingSpriteBuffer = 0;
+
 		
 		if(getLCDControl()&LCD_CONTROL_SPRITE_ENABLE){
+
 			if(spriteTableChanged == 1){	//The table must be rearranged
 				spriteTableChanged = 0;
 			}
@@ -642,15 +643,19 @@ int spriteBufferFill(void *arguments){
 					frontSpriteBuffer[j][i] = basePalette[4];
 				}
 			}
+
+         fixSpritePriorities(spritePriorities);
 			
-			for(currSprite = firstSprite;currSprite!=NULL;currSprite = currSprite->next){
-				spriteY = OAMTableEntry[currSprite->spriteNum].Y;
-				spriteX = OAMTableEntry[currSprite->spriteNum].X;
-				spriteTileNum = OAMTableEntry[currSprite->spriteNum].tile;
-				spriteFlags = OAMTableEntry[currSprite->spriteNum].flags;
+			for(spriteNum=0; spriteNum < 40; spriteNum++) {
+				spriteY = OAMTableEntry[spritePriorities[spriteNum]].Y;
+				spriteX = OAMTableEntry[spritePriorities[spriteNum]].X;
+				spriteTileNum = OAMTableEntry[spritePriorities[spriteNum]].tile;
+				spriteFlags = OAMTableEntry[spritePriorities[spriteNum]].flags;
 				
-				if(spriteY<160 && spriteX<144){	//Outside of range, don't draw
+				if(spriteY<160 && spriteX<164 && spriteY != 0){	//Outside of range, don't draw
 					tooManySprites = 0;
+
+               printf("%d->", spriteNum);
 					
 					for(i=0;i<8;i++){	//Checks for too many sprites
 						if((i+spriteY)>=144){
@@ -673,69 +678,74 @@ int spriteBufferFill(void *arguments){
 							}
 							numSpritesPerLine[i+spriteY]++;
 						}
-						
-						//printf("Drawing spriteNum: %d\n",currSprite->spriteNum);
-						
+                  memset(spriteDataBuffer, 0, sizeof(int)*8*16);						
+
 						//Draw the actual sprites
 						if((getLCDControl()&LCD_CONTROL_SPRITE_8X16) == 0){
 							//8x8 Sprites
 							if((spriteFlags&OAM_FLAG_PRIORITY)==0){
 								//Above Background
 								if((spriteFlags&OAM_FLAG_PALETTE)==0){
-									drawBGTileToBuffer(spriteTileNum&0xFF,frontSpriteBuffer,spriteX-8,spriteY-16,sprite0Palette);
+									drawSpriteTileToBuffer8x8(spriteTileNum&0xFF,spriteDataBuffer,sprite0Palette);
 								} else {
-									drawBGTileToBuffer(spriteTileNum&0xFF,frontSpriteBuffer,spriteX-8,spriteY-16,sprite1Palette);
+									drawSpriteTileToBuffer8x8(spriteTileNum&0xFF,spriteDataBuffer,sprite1Palette);
 								}
 								
 								if(spriteFlags&OAM_FLAG_XFLIP){
-								///	printf("Sprite being flipped\n");
-									reverseTile(frontSpriteBuffer,spriteX-8,spriteY-16);
+									reverseTile8x8(spriteDataBuffer);
 								}
+                        if(spriteFlags&OAM_FLAG_YFLIP){
+                           flipTile8x8(spriteDataBuffer);
+                        }
+                        copySpriteToScreenBuffer8x8(frontSpriteBuffer, spriteDataBuffer, spriteX-8, spriteY-16);
 							} else {
 								//Below Background
 								if((spriteFlags&OAM_FLAG_PALETTE)==0){
-									drawBGTileToBuffer(spriteTileNum&0xFF,backSpriteBuffer,spriteX-8,spriteY-16,sprite0Palette);
+									drawSpriteTileToBuffer8x8(spriteTileNum&0xFF,spriteDataBuffer,sprite0Palette);
 								} else {
-									drawBGTileToBuffer(spriteTileNum&0xFF,backSpriteBuffer,spriteX-8,spriteY-16,sprite1Palette);
+									drawSpriteTileToBuffer8x8(spriteTileNum&0xFF,spriteDataBuffer,sprite1Palette);
 								}
 								
 								if(spriteFlags&OAM_FLAG_XFLIP){
-									//printf("Sprite being flipped\n");
-									reverseTile(backSpriteBuffer,spriteX-8,spriteY-16);
+									reverseTile8x8(spriteDataBuffer);
 								}
+                        if(spriteFlags&OAM_FLAG_YFLIP){
+                           flipTile8x8(spriteDataBuffer);
+                        }
+                        copySpriteToScreenBuffer8x8(backSpriteBuffer, spriteDataBuffer, spriteX-8, spriteY-16);
 							}
 						} else {
 							//8x16 Sprites
 							if((spriteFlags&OAM_FLAG_PRIORITY)==0){
 								//Above Background
 								if((spriteFlags&OAM_FLAG_PALETTE)==0){
-									drawBGTileToBuffer(spriteTileNum&0xFE,frontSpriteBuffer,spriteX-8,spriteY-16,sprite0Palette);
-									drawBGTileToBuffer((spriteTileNum&0xFE)+1,frontSpriteBuffer,spriteX-8,spriteY-8,sprite0Palette);
+									drawSpriteTileToBuffer8x16(spriteTileNum&0xFE,spriteDataBuffer,sprite0Palette);
 								} else {
-									drawBGTileToBuffer(spriteTileNum&0xFE,frontSpriteBuffer,spriteX-8,spriteY-16,sprite1Palette);
-									drawBGTileToBuffer((spriteTileNum&0xFE)+1,frontSpriteBuffer,spriteX-8,spriteY-8,sprite1Palette);
+									drawSpriteTileToBuffer8x16(spriteTileNum&0xFE,spriteDataBuffer,sprite1Palette);
 								}
 								
 								if(spriteFlags&OAM_FLAG_XFLIP){
-									//printf("Sprite being flipped\n");
-									reverseTile(frontSpriteBuffer,spriteX-8,spriteY-16);
-									reverseTile(frontSpriteBuffer,spriteX-8,spriteY-8);
+									reverseTile8x16(spriteDataBuffer);
 								}
+                        if(spriteFlags&OAM_FLAG_YFLIP){
+                           flipTile8x16(spriteDataBuffer);
+                        }
+                        copySpriteToScreenBuffer8x16(frontSpriteBuffer, spriteDataBuffer, spriteX-8, spriteY-16);
 							} else {
 								//Below Background
 								if((spriteFlags&OAM_FLAG_PALETTE)==0){
-									drawBGTileToBuffer(spriteTileNum&0xFE,backSpriteBuffer,spriteX-8,spriteY-16,sprite0Palette);
-									drawBGTileToBuffer((spriteTileNum&0xFE)+1,backSpriteBuffer,spriteX-8,spriteY-8,sprite0Palette);
+									drawSpriteTileToBuffer8x16(spriteTileNum&0xFE,spriteDataBuffer,sprite0Palette);
 								} else {
-									drawBGTileToBuffer(spriteTileNum&0xFE,backSpriteBuffer,spriteX-8,spriteY-16,sprite1Palette);
-									drawBGTileToBuffer((spriteTileNum&0xFE)+1,backSpriteBuffer,spriteX-8,spriteY-8,sprite1Palette);
+									drawSpriteTileToBuffer8x16(spriteTileNum&0xFE,spriteDataBuffer,sprite1Palette);
 								}
 								
 								if(spriteFlags&OAM_FLAG_XFLIP){
-									//printf("Sprite being flipped\n");
-									reverseTile(backSpriteBuffer,spriteX-8,spriteY-16);
-									reverseTile(backSpriteBuffer,spriteX-8,spriteY-8);
+									reverseTile8x16(spriteDataBuffer);
 								}
+                        if(spriteFlags&OAM_FLAG_YFLIP){
+                           flipTile8x16(spriteDataBuffer);
+                        }
+                        copySpriteToScreenBuffer8x16(backSpriteBuffer, spriteDataBuffer, spriteX-8, spriteY-16);
 							}
 						}
 					}
@@ -743,25 +753,13 @@ int spriteBufferFill(void *arguments){
 			}
 		}
 		//Done drawing for this cycle		
-		*backSpriteBufferComplete = 1;
-		*frontSpriteBufferComplete = 1;
-		*beginFillingSpriteBuffer = 0;
-
+      printf("\n");
 		SDL_SemPost(spriteEndSem);
 	}
 	return 0;
 }			
 	
 int drawVideo(void* args){
-	
-	char backSpriteBufferComplete = 0;
-	char frontSpriteBufferComplete = 0;
-	char backgroundBufferComplete = 0;
-	char windowBufferComplete = 0;
-	
-	char beginFillingBackgroundBuffer = 0;
-	char beginFillingWindowBuffer = 0;
-	char beginFillingSpriteBuffer = 0;
 	
 	SDL_Thread *backgroundBufferFillThread = NULL;
 	SDL_Thread *windowBufferFillThread = NULL;
@@ -801,19 +799,12 @@ int drawVideo(void* args){
 	basePalette[0] = colorWhite;
 
 
-	backgroundArgs[0] = &backgroundBufferComplete;
-	backgroundArgs[1] = &beginFillingBackgroundBuffer;
 	backgroundArgs[2] = backgroundBuffer;
    backgroundArgs[3] = basePalette;
 	
-	windowArgs[0] = &windowBufferComplete;
-	windowArgs[1] = &beginFillingWindowBuffer;
 	windowArgs[2] = windowBuffer;
    windowArgs[3] = basePalette;
 	
-	spriteArgs[0] = &backSpriteBufferComplete;
-	spriteArgs[1] = &frontSpriteBufferComplete;
-	spriteArgs[2] = &beginFillingSpriteBuffer;
 	spriteArgs[3] = backSpriteBuffer;
 	spriteArgs[4] = frontSpriteBuffer;
    spriteArgs[5] = basePalette;
@@ -868,12 +859,12 @@ int drawVideo(void* args){
 
 				if(checkForWhite(backgroundBuffer[i][j])){	//If background color is 0
 					if(!hasAlpha(backSpriteBuffer[i][j])){
-                    renderScreen[j][i] = backSpriteBuffer[i][j]; 
+                    //renderScreen[j][i] = backSpriteBuffer[i][j]; 
                }
 				} 
 
 				if(!hasAlpha(windowBuffer[i][j])){
-                 renderScreen[j][i] = windowBuffer[i][j];
+                 //renderScreen[j][i] = windowBuffer[i][j];
 		      }
 
 				if(!hasAlpha(frontSpriteBuffer[i][j])){
