@@ -455,7 +455,7 @@ int backgroundBufferFill(void *arguments){
 			
 			for(i=-1;i<TILES_PER_COLUMN;i++){
 				for(j=-1;j<TILES_PER_ROW;j++){
-				
+
 					tileOffsetX = getscrollX()/8 + j;
 					if(tileOffsetX >= 32){
 						tileOffsetX-=32;
@@ -468,20 +468,14 @@ int backgroundBufferFill(void *arguments){
 					currTile = (unsigned int)BGTileMap[tileOffsetY*32+tileOffsetX]&0xFF;				
 					
 					if(getLCDControl()&LCD_CONTROL_BG_TILE_DATA){
-						drawBGTileToBuffer(currTile&0x1FF,backgroundBuffer,j*8+(getscrollX()%8),i*8+(getscrollY()%8),bgPalette);
+						drawBGTileToBuffer(currTile&0x1FF,backgroundBuffer,j*8-(getscrollX()%8),i*8-(getscrollY()%8),bgPalette);
 					} else {
 						if(currTile<0x80){
-							drawBGTileToBuffer((currTile+0x100)&0x1FF,backgroundBuffer,j*8+(getscrollX()%8),i*8+(getscrollY()%8),bgPalette);
+							drawBGTileToBuffer((currTile+0x100)&0x1FF,backgroundBuffer,j*8-(getscrollX()%8),i*8-(getscrollY()%8),bgPalette);
 						} else {
-							drawBGTileToBuffer((currTile)&0x1FF,backgroundBuffer,j*8+(getscrollX()%8),i*8+(getscrollY()%8),bgPalette);
+							drawBGTileToBuffer((currTile)&0x1FF,backgroundBuffer,j*8-(getscrollX()%8),i*8-(getscrollY()%8),bgPalette);
 						}
 					}
-						
-					/*if((((*LCDControl)&LCD_CONTROL_BG_TILE_DATA)==0)&&(currTile<0x80)){
-						currTile+=128;
-					}
-					drawBGTileToBuffer(currTile&0x1FF,backgroundBuffer,j*8+(*scrollX%8),i*8+(*scrollY%8),bgPalette);
-					*/
 				}
 			}
 		
@@ -512,7 +506,7 @@ int windowBufferFill(void *arguments){
 	char *BGTileMap = NULL;
 	
 	int i,j;
-	unsigned int currTile;
+	int currTile;
 	
 	while(1){
 		SDL_SemWait(windowStartSem);
@@ -541,10 +535,23 @@ int windowBufferFill(void *arguments){
 				
 				for(i=0;i*8+(getWX()-7)<160;i++){
 					for(j=0;j*8+getWY()<144;j++){
-						currTile = BGTileMap[i*32+j];
-						currTile += 128;	//Make the number unsigned
-						
-						drawBGTileToBuffer(0x81,windowBuffer,i*8+getWX()-7,j*8+getWY(),windowPalette);
+						currTile = BGTileMap[j*32+i];
+
+                  if((getLCDControl()&LCD_CONTROL_WINDOW_TILE_DATA)) {
+                     //Data from 0x8000-0x8FFF. Unsigned
+                     currTile &= 0xFF;
+                  } else {
+                     //Data from 0x8800-0x97FF. Signed
+                     if((currTile&0x80) == 0) {
+                        currTile &= 0xFF;
+                        currTile += 256;
+                        currTile &= 0x1FF;
+                     } else {
+                        currTile &= 0xFF;
+                     }
+                  }
+				
+						drawBGTileToBuffer(currTile,windowBuffer,i*8+getWX()-7,j*8+getWY(),windowPalette);
 					}
 				}
 			}
@@ -644,6 +651,10 @@ int spriteBufferFill(void *arguments){
 				}
 			}
 
+         for(i = 0; i < 40; i++) {
+            spritePriorities[i] = i;
+         }
+
          fixSpritePriorities(spritePriorities);
 			
 			for(spriteNum=0; spriteNum < 40; spriteNum++) {
@@ -655,7 +666,7 @@ int spriteBufferFill(void *arguments){
 				if(spriteY<160 && spriteX<164 && spriteY != 0){	//Outside of range, don't draw
 					tooManySprites = 0;
 
-               printf("%d->", spriteNum);
+               //printf("%d->", spriteNum);
 					
 					for(i=0;i<8;i++){	//Checks for too many sprites
 						if((i+spriteY)>=144){
@@ -753,7 +764,7 @@ int spriteBufferFill(void *arguments){
 			}
 		}
 		//Done drawing for this cycle		
-      printf("\n");
+      //printf("\n");
 		SDL_SemPost(spriteEndSem);
 	}
 	return 0;
@@ -859,12 +870,12 @@ int drawVideo(void* args){
 
 				if(checkForWhite(backgroundBuffer[i][j])){	//If background color is 0
 					if(!hasAlpha(backSpriteBuffer[i][j])){
-                    //renderScreen[j][i] = backSpriteBuffer[i][j]; 
+                    renderScreen[j][i] = backSpriteBuffer[i][j]; 
                }
 				} 
 
 				if(!hasAlpha(windowBuffer[i][j])){
-                 //renderScreen[j][i] = windowBuffer[i][j];
+                 renderScreen[j][i] = windowBuffer[i][j];
 		      }
 
 				if(!hasAlpha(frontSpriteBuffer[i][j])){
@@ -878,13 +889,13 @@ int drawVideo(void* args){
 		if(framesElapsed == 1){
 			framesElapsed = 0;
 			currTime = SDL_GetTicks();
-			
-			if((currTime-prevTime)<(1000/60)){	//Updating more than 60 times per second
+			/*
+			if((currTime-prevTime)<(1000./60)){	//Updating more than 60 times per second
 				//printf("Delaying fps\n");
-				SDL_Delay(1000/60-(currTime-prevTime));
+				SDL_Delay(1000./60-(currTime-prevTime));
 			} else {
 				//printf("fps: %f\n",60./((float)(currTime-prevTime)/(1000./60)));
-			}
+			}*/
 			
 			prevTime = currTime;
 			

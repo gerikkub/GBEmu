@@ -29,7 +29,7 @@
 #define MAX_MEM	0xFFFF
 
 #define MAX_MHZ	4
-#define MAX_HZ (1024*1024*(MAX_MHZ))
+#define MAX_HZ (1000*1000*(MAX_MHZ))
 
 #define MAX_PC_RECALL_LENGTH	500
 
@@ -661,16 +661,8 @@ int main(int argc,char** argv){
 	clearFlagH();
 	clearFlagC();
 	
-	/*Redraw Screen every 70224 clicks
-	Mode 0 for 207 clicks then Mode 2 for 77 clicks the Mode 3 for 172 clicks
-	After 160 lines switch to Mode 1 for 4560 clicks
-	*/
-	
 	//PCRecallTest();
 	
-	//printf("scrollX init: 0x%p\n",scrollX);
-	//while(timerReady == 0);
-
    if(argv[2] != NULL) {
       readState(argv[2]);
    }
@@ -762,37 +754,38 @@ int runGameboy(void *args){
 
 	unsigned int currTime;
 	unsigned int prevTime = 0;
+   int cycleCount = 0;
 	char** argv = args;
 
 	writeA(0);
 
 	while(runGameboyCycle()!=0x10){
-		/*screenRefreshCount++;
-		if(screenRefreshCount==70224){
-			screenRefreshCount=0;
+		cycleCount++;
+		if(cycleCount==70224){
+			cycleCount=0;
 			
 			//Delay if needed
 			currTime = SDL_GetTicks();
-			if((currTime-prevTime) < (unsigned int)((1./(float)MAX_HZ)*70224.*1000000.)){
-				//printf("Delaying for %d\n",(unsigned int)((1./(float)MAX_HZ)*70224.*1000000.) - (currTime-prevTime));
-				SDL_Delay(((unsigned int)((1./(float)MAX_HZ)*70224.*1000000.) - (currTime-prevTime))/1000);
-			}
-			prevTime = currTime;
-         */
-			/** DEBUG **/
-			//printf("Debug Workbank: %X\n",workBanks[0x1E5C]);
+         printf("currTime - prevTime: %d\n", currTime-prevTime);
+			if((currTime-prevTime) < (unsigned int)((70224./(float)MAX_HZ) * 1000) - 2){
+				//printf("Delaying for %d\n",((unsigned int)((70224./(float)MAX_HZ) * 1000) - (currTime-prevTime) - 2));
+				SDL_Delay(((unsigned int)((70224./(float)MAX_HZ) * 1000) - (currTime-prevTime) - 2)); //2 is a smudge factor. Take function overhead into account.
+         }
+         
+         /*if((currTime-prevTime) < 16) {
+            SDL_Delay(16 - (currTime - prevTime));
+         }*/
+			prevTime = SDL_GetTicks();
+         
 			
-		/*}
-      if(screenRefreshCount == 0) {
-         //printf("Mem at DB80: %hhX\n", readCharFromMem(0xDB80));
-      }*/
+		}
 	}
 	printf("Gameboy Stopped at PC: %hX\n",getPC());
 	
-	printPCRecall(PCRecallHead,MAX_PC_RECALL_LENGTH);
+	//printPCRecall(PCRecallHead,MAX_PC_RECALL_LENGTH);
 	
-	dumpMemToFile(argv[2]);
-	dumpRegToFile(argv[3]);
+	//dumpMemToFile(argv[2]);
+	//dumpRegToFile(argv[3]);
 
 	SDL_Delay(3000);
 	exit(1);

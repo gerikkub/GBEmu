@@ -160,7 +160,7 @@ void initMem(int numMemBanks,int ramSize,char cartType){
 	
 	printf("romBanks: 0x%p\n",romBanks);
 
-	vramBanks = malloc(0x4000);	//16KB
+	vramBanks = calloc(0x4000, 1);	//16KB
 	if(vramBanks==NULL){
 		printf("Couldn't allocate enought mem for vramBank!!!\n");
 		exit(0);
@@ -169,34 +169,9 @@ void initMem(int numMemBanks,int ramSize,char cartType){
 	
 	//strcpy(vramBanks,"VRAM Start\n");
 	
-	//ramBank allocate when code for memcontrollers is done
-	switch(ramSize){
-		case RAM_SIZE_0:
-			break;
-		case RAM_SIZE_2K:
-			ramBanks = malloc(0x2000);
-			break;
-		case RAM_SIZE_8K:
-			ramBanks = malloc(0x8000);
-			break;
-		case RAM_SIZE_32K:
-			ramBanks = malloc(0x20000);
-			break;
-	}
-	printf("ramSize: %x\n",ramSize);
-	switch(ramSize){
-		case RAM_SIZE_0:
-			break;
-		case RAM_SIZE_2K:
-			memset(ramBanks,0,0x2000);
-			break;
-		case RAM_SIZE_8K:
-			memset(ramBanks,0,0x8000);
-			break;
-		case RAM_SIZE_32K:
-			memset(ramBanks,0,0x20000);
-			break;
-	}
+	//Would allocate ramBanks size based on ROM, but games LIE!!!!!!!
+   ramBanks = calloc(0x20000, 1);
+
 	if(ramSize!=RAM_SIZE_0){
 		//strcpy(ramBanks,"RAM BANKS!!!!");
 	}
@@ -216,7 +191,7 @@ void initMem(int numMemBanks,int ramSize,char cartType){
 	}
 	memset(OAMTable,0,0xA0);
 	
-	IOPorts = malloc(0x80);
+	IOPorts = calloc(0x80, 1);
 	if(IOPorts==NULL){
 		printf("Couldn't allocate enought mem for IOPorts!!!\n");
 		exit(0);
