@@ -929,12 +929,12 @@ void instruction96(){
 		clearFlagZ();
 	}
 	clearFlagN();
-	if((begin&0xF)>(getA()&0xF)){
+	if((begin&0xF)<(getA()&0xF)){
 		setFlagH();
 	} else {
 		clearFlagH();
 	}
-	if((begin&0xFF)>(getA()&0xFF)){
+	if((begin&0xFF)<(getA()&0xFF)){
 		setFlagC();
 	} else {
 		clearFlagC();
@@ -959,13 +959,13 @@ void instruction9E(){
 	} else {
 		clearFlagZ();
 	}
-	clearFlagN();
-	if((begin&0xF)>(getA()&0xF)){
+	setFlagN();
+	if((begin&0xF)<(getA()&0xF)){
 		setFlagH();
 	} else {
 		clearFlagH();
 	}
-	if((begin&0xFF)>(getA()&0xFF)){
+	if((begin&0xFF)<(getA()&0xFF)){
 		setFlagC();
 	} else {
 		clearFlagC();

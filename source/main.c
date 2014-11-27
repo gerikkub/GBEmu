@@ -760,13 +760,13 @@ int runGameboy(void *args){
 	writeA(0);
 
 	while(runGameboyCycle()!=0x10){
+      //printf("%d\n", readCharFromMem(0xC000));
 		cycleCount++;
 		if(cycleCount==70224){
 			cycleCount=0;
 			
 			//Delay if needed
 			currTime = SDL_GetTicks();
-         printf("currTime - prevTime: %d\n", currTime-prevTime);
 			if((currTime-prevTime) < (unsigned int)((70224./(float)MAX_HZ) * 1000) - 2){
 				//printf("Delaying for %d\n",((unsigned int)((70224./(float)MAX_HZ) * 1000) - (currTime-prevTime) - 2));
 				SDL_Delay(((unsigned int)((70224./(float)MAX_HZ) * 1000) - (currTime-prevTime) - 2)); //2 is a smudge factor. Take function overhead into account.
