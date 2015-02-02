@@ -18,6 +18,8 @@
 #include "debug.h"
 #include "dump.h"
 
+#define DEBUG_MODE 1
+
 #define NO_STDIO_REDIRECT	1
 
 #include <SDL2/SDL.h>
@@ -648,13 +650,16 @@ int main(int argc,char** argv){
 	
 	initVideo();
 	initJoypad();
-	//initTimer();
 
 	initInstructionCounter();
 	
 	
 	writePC(0x100);
    writeSP(0xFFFE);
+   writeAF(0x01B0);
+   writeBC(0x0013);
+   writeDE(0x00D8);
+   writeHL(0x014D);
 	
 	clearFlagZ();
 	clearFlagN();
@@ -666,9 +671,14 @@ int main(int argc,char** argv){
    if(argv[2] != NULL) {
       readState(argv[2]);
    }
-	
-	SDL_Thread *runGameboyThread = SDL_CreateThread(runGameboy, "gameboy", argv);
-   //SDL_Thread *runGameboyThread = SDL_CreateThread(debugGameboy, "gameboy", argv);
+
+   	
+
+   #if DEBUG_MODE == 1
+      SDL_Thread *runGameboyThread = SDL_CreateThread(debugGameboy, "gameboy", argv);
+   #else
+	   SDL_Thread *runGameboyThread = SDL_CreateThread(runGameboy, "gameboy", argv);
+   #endif
 	if(runGameboyThread == NULL){
 		printf("Unable to create Gameboy Thread. Exiting!!!\n");
 	}

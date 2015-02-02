@@ -230,10 +230,6 @@ void writeCharToMem(int loc,char value){
 		printf("writeCharToMem loc: 0x%hhX value: 0x%hX\n",loc,value);
 	#endif	
 	
-	/*if(loc == 0xFFA6){
-		printf("writing %hhX to the value at PC: %hX\n",value,getPC());
-	}*/
-	
 	if(loc<0xA000&&loc>=0x8000){	//VRam
 		vramBanks[(loc-0x8000)+0x2000*currentVramBank] = value;
 	} else if(loc<0x8000){	//Other Memcontroller stuff
@@ -292,10 +288,9 @@ void writeShortToMem(int loc,short value){
 
 unsigned char readCharFromMem(int loc){
 	loc&=0xFFFF;
-	
-	/*if(loc == 0xFFA6){
-		printf("reading the value\n");
-	}*/
+
+   //if(loc == 0xFF80)
+      //printf("Controller Read: %hX\n", getPC());
 	
 	//return gbcMainMem[loc];
 	if(loc<0x4000){	//Rom Bank 00 always this one

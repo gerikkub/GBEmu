@@ -39,6 +39,7 @@ typedef struct {
 } cmdCmp;
 
 static volatile int sigint = 0;
+static int haveQueuedCmds = 0;
 
 static cmdCmp compare[] =
 		{{"step","s",CMD_STEP},
@@ -66,11 +67,32 @@ int strcmp2(char *src, char *cmp1, char *cmp2){
 
 int getCommand(char *cmdBuffer){
 
-	
+   static int repeatCount = 0;
+   static int repeatCmd = 0;
+
+   if(repeatCount > 0) {
+      repeatCount--;
+      if(repeatCount == 0) {  
+         haveQueuedCmds = 0;
+      }
+      return repeatCmd;
+   }
+
+   if(isdigit(*cmdBuffer)) {
+      sscanf(cmdBuffer, "%d", &repeatCount);
+      repeatCount = repeatCount <= 1 ? 0 : repeatCount -1;
+      if(repeatCount > 0) {
+         haveQueuedCmds = 1;
+      }
+      while(isdigit(*cmdBuffer)) {
+         cmdBuffer++;
+      }
+   }
+ 
 	int ndx;
 	for(ndx = 0; compare[ndx].cmd; ndx++){
 		if(strcmp2(cmdBuffer,compare[ndx].str1,compare[ndx].str2))
-			return compare[ndx].cmd;
+			return repeatCmd = compare[ndx].cmd;
 	}
 
 	return 0;
@@ -135,13 +157,15 @@ int debugGameboy(void *argv){
 	SDL_Delay(500);
 
 	while(!quit && !stop){
-		printf("0x%.4hX > ", getPC());
-		fgets(cmdBuffer, CMD_BUFFER_LEN, stdin);
-		cmdString = strtok(cmdBuffer, " \n");
-
-		if(cmdString == NULL)
-			continue;
-
+		
+      if(haveQueuedCmds == 0) {
+         printf("0x%.4hX > ", getPC());
+		   fgets(cmdBuffer, CMD_BUFFER_LEN, stdin);
+		   cmdString = strtok(cmdBuffer, " \n");
+         if(cmdString == NULL)
+			   continue;
+      }
+		
 		switch(getCommand(cmdString)){
 		case CMD_STEP:
 			startPC = getPC();

@@ -620,23 +620,30 @@ void instruction17(){
 
 void instruction27(){
 	//DAA
-	if((getA()&0xF)>9||getFlagH()==1){
-		if(getFlagN()==0){
-			writeA(getA() + 6);
-		} else {
-			writeA(getA() - 6);
+   int a = getA();
+   if(getFlagN()) {
+      if(getFlagH()) {
+         a = (a - 6) & 0xFF;
+      }
+
+      if(getFlagC()) {
+         a -= 0x60;
+      }
+   } else {
+	   if((a&0xF)>9||getFlagH()==1){
+			a = a + 6;
+      }
+	   if((a&0xFFF)>0x9F||getFlagC()==1){
+			a = a + 0x60;
 		}
 	}
-	if((getA()&0xF0)>0x9F||getFlagC()==1){
-		if(getFlagN()==0){
-			writeA(getA() + 0x60);
-		} else {
-			writeA(getA() - 0x60);
-		}
-		setFlagC();
-	} else {
-		clearFlagC();
-	}
+
+   writeA(a);
+
+   if((a & 0x100) == 0x100) {
+      setFlagC();
+   }
+
 	if(getA() == 0){
 		setFlagZ();
 	} else {
@@ -1130,7 +1137,7 @@ void instructionE1(){
 }
 //POP AF
 void instructionF1(){
-	writeAF(readShortFromMem(getSP()));
+	writeAF(readShortFromMem(getSP()) & 0xFFF0); //Ignore bottom bits of flag
 	
 	writeSP(getSP()+2);
 	writePC(getPC()+1);
@@ -1180,6 +1187,7 @@ void instructionC3(){
 }
 //DI	Disable Interrupts
 void instructionF3(){
+   printf("Disabling Interrupts: %hX\n", getPC());
 	IME = 0;
 	writePC(getPC()+1);
 }
@@ -1438,6 +1446,7 @@ void instructionFA(){
 
 //EI - enable Interrupts
 void instructionFB(){
+   printf("Enabling Interrupts: %hX\n", getPC());
 	IME = 1;
 	writePC(getPC()+1);
 }
@@ -1475,21 +1484,33 @@ void instructionCD(){
 
 //ADC A,d8
 void instructionCE(){ 
-unsigned char begin = getA(); 
-	writeA(begin+readCharFromMem(getPC()+1));
-	if(getFlagC()) writeA(getA()+1); 
+   unsigned char begin = getA(); 
+   unsigned int readChar = readCharFromMem(getPC() + 1);
+	writeA(begin+readChar);
+
+	if(getFlagC()){ 
+      writeA(getA()+1); 
+   }
+
 	if((getA()&0xFF)==0){ 
 		setFlagZ();
 	} else { 
 		clearFlagZ(); 
 	}
 	clearFlagN(); 
-	if((begin&0xF)>(getA()&0xF)){ 
+
+   //H flag check should happen before the C increment to be set correctly
+	if(((getA()&0xF)<(begin&0xF)) && ((getA()&0xF)<(readChar&0xF))){ 
 		setFlagH(); 
 	} else { 
 		clearFlagH(); 
 	} 
-	if((begin&0xFF)>(getA()&0xFF)){ 
+
+   if(getFlagC()){ 
+      writeA(getA()+1); 
+   }
+
+	if((((getA()&0xFF)<(begin&0xFF)) && ((getA()&0xFF)<(readChar&0xFF))) || (readChar == 0x100)){ 
 		setFlagC(); 
 	} else { 
 		clearFlagC(); 

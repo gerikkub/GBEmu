@@ -33,7 +33,6 @@ void clearInterrupt(char a){
 	setinterruptFlags(getinterruptFlags() & ~a);
 }
 
-//Probably would have better to use a struct with unions. Change later
 void writeAF(short value){
 	short* reg = (short*)(registerList);
 	*reg = value;
@@ -236,6 +235,7 @@ int runCPUCycle(){
 	//Check for Interrupts
 	if(IME == 1) {
 		currentInterrupts = getinterruptFlags()&interruptER;
+      printf("currrentInterrupts: %hhX\n", currentInterrupts);
 		if(currentInterrupts&INT_VBLANK){
 			writeSP(getSP()-2);
 			writeShortToMem(getSP(),getPC());
@@ -251,6 +251,7 @@ int runCPUCycle(){
 			clearInterrupt(INT_LCD);
          halted = 0;
 		} else if(currentInterrupts&INT_TIMER){
+         printf("Timer Int\n");
 			writeSP(getSP()-2);
 			writeShortToMem(getSP(),getPC());
 			writePC(0x50);

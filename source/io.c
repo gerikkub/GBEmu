@@ -214,6 +214,14 @@ char readTimerControl(){
 	return (*timerControl);
 }
 
+char writeInterruptFlagsReg(char value) {
+   (*interruptFlags) = value | 0xE0;
+}
+
+char readInterruptFlagsReg(char value) {
+   return *interruptFlags;
+}
+
 void initIO(){
 	permissionTable = (char*)calloc(0x80,1);	
 	if(permissionTable==NULL){
@@ -292,7 +300,7 @@ void initIO(){
 	writeAttribute(0x05,IO_READWRITE);	//Timer Counter
 	writeAttribute(0x06,IO_READWRITE);	//Timer Modulo
 	writeAttribute(0x07,IO_SPECIAL);	//Timer Control
-	writeAttribute(0x0F,IO_READWRITE);	//Interrupt Flags
+	writeAttribute(0x0F,IO_SPECIAL);	//Interrupt Flags
 	writeAttribute(0x4D,IO_SPECIAL);	//Prepare Speed Switch CGB
 	writeAttribute(0x56,IO_SPECIAL);	//IR Communications Port CGB
 	writeAttribute(0x70,IO_READWRITE);	//WRAM Bank CGB
@@ -305,11 +313,13 @@ void initIO(){
 	setSpecialWriteFunction(0x41,writeLCDStatus);
 	setSpecialWriteFunction(0x04,writeDivRegister);
 	setSpecialWriteFunction(0x07,writeTimerControl);
+   setSpecialWriteFunction(0x0F,writeInterruptFlagsReg);
 	
 	setSpecialReadFunction(0x00,readJoypadRead);
 	setSpecialReadFunction(0x41,readLCDStatus);
 	setSpecialReadFunction(0x04,readDivRegister);
 	setSpecialReadFunction(0x07,readTimerControl);
+   setSpecialReadFunction(0x0F,readInterruptFlagsReg);
 	
 	LCDControl = IOPorts+0x40;
 	LCDStatus = IOPorts+0x41;
