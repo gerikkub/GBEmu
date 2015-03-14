@@ -1484,33 +1484,26 @@ void instructionCD(){
 
 //ADC A,d8
 void instructionCE(){ 
-   unsigned char begin = getA(); 
-   unsigned int readChar = readCharFromMem(getPC() + 1);
-	writeA(begin+readChar);
-
-	if(getFlagC()){ 
-      writeA(getA()+1); 
+   char begin = getA();
+   writeA(begin + readCharFromMem(getPC() + 1));
+   if(getFlagC()) {
+      writeA(getA() + 1);
    }
 
-	if((getA()&0xFF)==0){ 
+	if((getA()&0xFF)==0) { 
 		setFlagZ();
 	} else { 
 		clearFlagZ(); 
 	}
 	clearFlagN(); 
 
-   //H flag check should happen before the C increment to be set correctly
-	if(((getA()&0xF)<(begin&0xF)) && ((getA()&0xF)<(readChar&0xF))){ 
+   if((begin&0xF)>(getA()&0xF)) {
 		setFlagH(); 
 	} else { 
 		clearFlagH(); 
 	} 
 
-   if(getFlagC()){ 
-      writeA(getA()+1); 
-   }
-
-	if((((getA()&0xFF)<(begin&0xFF)) && ((getA()&0xFF)<(readChar&0xFF))) || (readChar == 0x100)){ 
+   if((begin&0xFF)>(getA()&0xFF)) {
 		setFlagC(); 
 	} else { 
 		clearFlagC(); 
